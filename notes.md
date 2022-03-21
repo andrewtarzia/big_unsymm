@@ -14,6 +14,10 @@ build_cage.py
 build_subsystems.py
     will build triangles, squares and 6-mem rings from metal precursor and ligand -- includes optimisation
 
+utilities.py
+    defines utilities for construction
+    same as unsymm basically.
+
 optimisation.py
     defines optimisation sequence.
     same as unsymm.
