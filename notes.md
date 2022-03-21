@@ -22,6 +22,9 @@ optimisation.py
     defines optimisation sequence.
     same as unsymm.
 
+m6l6.py
+    contains the new topology graph for the ring
+
 structure_analysis.py
     for all desired systems:
         calculates total energies

@@ -46,15 +46,4 @@ def crest_conformer_settings(solvent=None):
 
 
 def gulp_path():
-    raise NotImplementedError()
     return '/home/atarzia/software/gulp-5.1/Src/gulp/gulp'
-
-
-def mongo_client():
-    raise NotImplementedError()
-    user = 'atarzia'
-    password = getpass()
-    return MongoClient(
-        f'mongodb+srv://{user}:{password}@cluster0.32as5.mongodb.net'
-        '/lc?retryWrites=true&w=majority'
-    )
