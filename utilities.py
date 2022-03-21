@@ -37,7 +37,7 @@ class AromaticCNCFactory(stk.FunctionalGroupFactory):
         generic_functional_groups = stk.SmartsFunctionalGroupFactory(
             smarts='[#6]~[#7X2]~[#6]',
             bonders=self._bonders,
-            deleters=self._deleters
+            deleters=self._deleters,
         ).get_functional_groups(molecule)
         for fg in generic_functional_groups:
             atom_ids = (i.get_id() for i in fg.get_atoms())
@@ -60,7 +60,14 @@ class AromaticCNC(stk.GenericFunctionalGroup):
 
     """
 
-    def __init__(self, carbon1, nitrogen, carbon2, bonders, deleters):
+    def __init__(
+        self,
+        carbon1,
+        nitrogen,
+        carbon2,
+        bonders,
+        deleters,
+    ):
         """
         Initialize a :class:`.AromaticCNC` instance.
 

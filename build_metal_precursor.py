@@ -14,48 +14,18 @@ import sys
 import os
 import stk
 import stko
-import numpy as np
 
 from env_set import (
     meta_path,
     calc_path,
     xtb_path,
-    crest_conformer_settings,
+    gulp_path,
 )
-from utilities import (
-    AromaticCNCFactory,
-    angle_between,
-    split_xyz_file,
-    get_lowest_energy_conformer,
-)
+from utilities import AromaticCNCFactory
+from spinner import rotate_fgs
 
 
-def calculate_Br_COM_Br_angle(bb):
-    fg_counts = 0
-    fg_positions = []
-    for fg in bb.get_functional_groups():
-        if isinstance(fg, stk.Bromo):
-            fg_counts += 1
-            Br_position, = bb.get_atomic_positions(
-                atom_ids=fg.get_bromine().get_id()
-            )
-            fg_positions.append(Br_position)
-
-    if fg_counts != 2:
-        raise ValueError(f'{bb} does not have 2 bromines.')
-
-    # Get building block centroid.
-    centroid = bb.get_centroid()
-
-    # Get vectors.
-    fg_vectors = [i-centroid for i in fg_positions]
-
-    # Calculate the angle between the two vectors.
-    angle = np.degrees(angle_between(*fg_vectors))
-    return angle
-
-
-def get_chosen_conformer(mol, name, calc_dir):
+def get_chosen_conformer(mol):
     """
     Select and optimize a conformer with desired directionality.
 
@@ -65,47 +35,12 @@ def get_chosen_conformer(mol, name, calc_dir):
 
     """
 
-    crest_output_dir = os.path.join(calc_dir, f'{name}_crest')
-    _crest_settings = crest_conformer_settings()
-
-    settings = _crest_settings
-    settings['speed_setting'] = 'mquick'
-    settings['charge'] = 2
-    settings['final_opt_level'] = 'normal'
-    logging.info(f'running crest conformer search: {settings}')
-    lowe_mol = get_lowest_energy_conformer(
-        name=name,
-        mol=mol,
-        settings=settings,
-        calc_dir=calc_dir,
-    )
-
-    logging.info(
-        f'getting optimal conformer of {name} from {crest_output_dir}'
-    )
     lowe_mol = stk.BuildingBlock.init_from_molecule(
-        molecule=lowe_mol,
+        molecule=mol,
         functional_groups=(stk.BromoFactory(), ),
     )
-    # Analyse all conformers from CREST.
-    crest_conformer_files = split_xyz_file(
-        num_atoms=lowe_mol.get_num_atoms(),
-        xyz_file=(
-            os.path.join(crest_output_dir, 'crest_conformers.xyz')
-        ),
-    )
-    logging.info(f'{name} has {len(crest_conformer_files)} conformers')
 
-    min_angle = calculate_Br_COM_Br_angle(lowe_mol)
-    print(min_angle)
-    for cre_file in crest_conformer_files:
-        _temp_mol = lowe_mol.with_structure_from_file(cre_file)
-        angle = calculate_Br_COM_Br_angle(_temp_mol)
-        print(angle)
-        if angle < min_angle:
-            min_angle = angle
-            out_molecule = lowe_mol.with_structure_from_file(cre_file)
-
+    out_molecule = rotate_fgs(lowe_mol)
     return out_molecule
 
 
@@ -180,20 +115,51 @@ def main():
 
     for topo in _topos:
         meta_unopt = os.path.join(_wd, f'{topo}_unopt.mol')
+        meta_rot = os.path.join(_wd, f'{topo}_rot.mol')
+        meta_gulp = os.path.join(_wd, f'{topo}_gulp.mol')
         meta_opt = os.path.join(_wd, f'{topo}_opt.mol')
-        meta_fin = os.path.join(_wd, f'{topo}_final.mol')
 
         sqpl_unopt = stk.ConstructedMolecule(
             topology_graph=stk.metal_complex.SquarePlanar(
                 metals=pd,
                 ligands=_topos[topo],
                 optimizer=stk.MCHammer(
-                    num_steps=300,
+                    num_steps=500,
                     target_bond_length=1.8,
                 ),
             ),
         )
         sqpl_unopt.write(meta_unopt)
+
+        if '2m' in topo:
+            if os.path.exists(meta_rot):
+                sqpl_rot = sqpl_unopt.with_structure_from_file(
+                    path=meta_rot,
+                )
+            else:
+                logging.info(f'getting optimal conformer of {topo}')
+                sqpl_rot = get_chosen_conformer(mol=sqpl_unopt)
+                sqpl_rot.write(meta_rot)
+        else:
+            sqpl_rot = stk.BuildingBlock.init_from_molecule(sqpl_unopt)
+
+        # Do Gulp opt first.
+        if not os.path.exists(meta_gulp):
+            CG = False
+            logging.info(f'UFF4MOF optimisation 1 of {topo} CG: {CG}')
+            gulp_opt = stko.GulpUFFOptimizer(
+                gulp_path=gulp_path(),
+                maxcyc=1000,
+                metal_FF={46: 'Pd4+2'},
+                metal_ligand_bond_order='',
+                output_dir=os.path.join(_cd, f'{topo}_gulp'),
+                conjugate_gradient=CG,
+            )
+            gulp_opt.assign_FF(sqpl_rot)
+            sqpl_gulp = gulp_opt.optimize(mol=sqpl_rot)
+            sqpl_gulp.write(meta_gulp)
+        else:
+            sqpl_gulp = sqpl_rot.with_structure_from_file(meta_gulp)
 
         if not os.path.exists(meta_opt):
             logging.info(f'xtb optimisation of {topo}')
@@ -210,23 +176,10 @@ def main():
                 unlimited_memory=True,
                 solvent=None,
             )
-            sqpl_opt = xtb_opt.optimize(mol=sqpl_unopt)
+            sqpl_opt = xtb_opt.optimize(mol=sqpl_gulp)
             sqpl_opt.write(meta_opt)
         else:
-            sqpl_opt = sqpl_unopt.with_structure_from_file(meta_opt)
-
-        if '2m' in topo:
-            if os.path.exists(meta_fin):
-                continue
-            sqpl_fin = get_chosen_conformer(
-                mol=sqpl_opt,
-                name=topo,
-                calc_dir=_cd,
-            )
-            sqpl_fin = xtb_opt.optimize(mol=sqpl_opt)
-            sqpl_fin.write(meta_fin)
-        else:
-            sqpl_opt.write(meta_fin)
+            sqpl_opt = sqpl_gulp.with_structure_from_file(meta_opt)
 
 
 if __name__ == "__main__":
