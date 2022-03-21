@@ -3,7 +3,7 @@
 # Distributed under the terms of the MIT License.
 
 """
-Script to build the ligand in this project.
+Script to build the metal precursor in this project.
 
 Author: Andrew Tarzia
 
