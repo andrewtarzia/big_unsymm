@@ -107,3 +107,34 @@ def rotate_fgs(mol):
     )
 
     return mol.with_position_matrix(conformer.get_position_matrix())
+
+
+def rotate_bbs(mol):
+    smolecule = get_supramolecule(mol)
+    movable_components = tuple(
+        i for i, c in enumerate(smolecule.get_components())
+        # Set to the known bb size.
+        if c.get_num_atoms() == 20
+    )
+
+    # Define atom ids that define vectors to move.
+    moving_pairs = tuple(
+        tuple(i.get_id() for i in fg.get_bonders())
+        for fg in mol.get_functional_groups()
+    )
+    cg = spd.Spinner(
+        step_size=0.0,
+        rotation_step_size=0.5,
+        num_conformers=300,
+        max_attempts=500,
+        potential_function=FGPotential(
+            moving_pairs=moving_pairs,
+            target=np.array((0, 0, 1)),
+        ),
+    )
+    conformer = cg.get_final_conformer(
+        supramolecule=smolecule,
+        movable_components=movable_components,
+    )
+
+    return mol.with_position_matrix(conformer.get_position_matrix())
