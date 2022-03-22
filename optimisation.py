@@ -11,255 +11,82 @@ Author: Andrew Tarzia
 
 import logging
 import os
+import stk
 import stko
+import glob
 
 import env_set
 
 
-def MOC_MD_opt(
-    cage,
-    cage_name,
-    integrator,
-    temperature,
-    N,
-    timestep,
-    equib,
-    production,
-    opt_conf,
-    metal_FFs,
-    metal_ligand_bond_order='half',
-    save_conf=False,
-    gulp_exec=None,
-):
-    """
-    Perform UFF4MOF molecular dynamics of MOC.
-    Parameters
-    ----------
-    cage : :class:`stk.ConstructedMolecule`
-        Cage to be optimised.
-    cage_name : :class:`str`
-        Name of cage.
-    Returns
-    -------
-    cage : :class:`stk.ConstructedMolecule`
-        Optimised cage.
-    """
-    raise NotImplementedError('no print')
-
-    if gulp_exec is None:
-        gulp_exec = '/home/atarzia/software/gulp-5.1/Src/gulp/gulp'
-
-    print(f'..........doing UFF4MOF MD of {cage_name}')
-    gulp_MD = stko.GulpUFFMDOptimizer(
-        gulp_path=gulp_exec,
-        metal_FF=metal_FFs,
-        metal_ligand_bond_order=metal_ligand_bond_order,
-        output_dir=f'cage_opt_{cage_name}_MD',
-        integrator=integrator,
-        ensemble='nvt',
-        temperature=temperature,
-        equilbration=equib,
-        production=production,
-        timestep=timestep,
-        N_conformers=N,
-        opt_conformers=opt_conf,
-        save_conformers=save_conf
-    )
-    gulp_MD.assign_FF(cage)
-    cage = gulp_MD.optimize(cage)
-
-    return cage
-
-
-def MOC_xtb_conformers(
-    cage,
-    cage_name,
-    etemp,
+def xtb_conformer_opt(
+    mol,
     output_dir,
     conformer_dir,
-    nc,
-    free_e,
     charge,
-    gfn_exec=None,
-    opt=False,
-    opt_level=None,
-    solvent=None,
-    handle_failure=False
 ):
     """
     Perform GFN2-xTB conformer scan of MOC.
-    Parameters
-    ----------
-    cage : :class:`stk.ConstructedMolecule`
-        Cage to be optimised.
-    cage_name : :class:`str`
-        Name of cage.
-    Returns
-    -------
-    cage : :class:`stk.ConstructedMolecule`
-        Optimised cage.
-    """
-    raise NotImplementedError('no print')
 
-    if gfn_exec is None:
-        gfn_exec = '/home/atarzia/software/xtb-190806/bin/xtb'
+    """
 
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
-    if solvent is None:
-        solvent_str = None
-        solvent_grid = 'normal'
-    else:
-        solvent_str, solvent_grid = solvent
-
-    print(
-        f'..........doing XTB conformer sorting by '
-        f'energy of {cage_name}'
-    )
     conformers = glob.glob(f'{conformer_dir}/conf_*.xyz')
-    ids = []
-    energies = []
+
     min_energy = 10E20
-    for file in sorted(conformers):
-        id = file.replace('.xyz', '').split('_')[-1]
-        cage = cage.with_structure_from_file(file)
-        opt_failed = False
-        if opt:
-            print(f'optimising conformer {id}')
+    for c_file in sorted(conformers):
+        id_ = c_file.replace('.xyz', '').split('_')[-1]
+        conf = mol.with_structure_from_file(c_file)
+
+        opt_conf_file = os.path.join(output_dir, f'conf_{id_}_opt.xyz')
+        if not os.path.exists(opt_conf_file):
+            logging.info(f'optimising conformer ID {id_} from {c_file}')
             xtb_opt = stko.XTB(
-                xtb_path=gfn_exec,
-                output_dir=f'opt_{cage_name}_{id}',
+                xtb_path=env_set.xtb_path(),
+                output_dir=os.path.join(output_dir, f'conf_{id_}_opt'),
                 gfn_version=2,
-                num_cores=nc,
-                opt_level=opt_level,
+                num_cores=4,
+                opt_level='crude',
                 charge=charge,
-                num_unpaired_electrons=free_e,
                 max_runs=1,
-                electronic_temperature=etemp,
                 calculate_hessian=False,
                 unlimited_memory=True,
-                solvent=solvent_str,
-                solvent_grid=solvent_grid
             )
-            try:
-                cage = xtb_opt.optimize(mol=cage)
-                cage.write(os.path.join(
-                    f'{output_dir}',
-                    f'conf_{id}_opt.xyz',
-                ))
-            except stko.XTBConvergenceError:
-                if handle_failure:
-                    opt_failed = True
-                    print(f'optimising conformer {id}: FAILED')
-                else:
-                    raise stko.XTBConvergenceError()
+            opt_conf = xtb_opt.optimize(mol=conf)
+            opt_conf.write(opt_conf_file)
+        else:
+            opt_conf = conf.with_structure_from_file(opt_conf_file)
 
-        print(f'..........calculating energy of {id} of {cage_name}')
+        logging.info(f'calculating energy of {id_}')
         # Extract energy.
         xtb_energy = stko.XTBEnergy(
-            xtb_path=gfn_exec,
-            output_dir=f'ey_{cage_name}_{id}',
-            num_cores=nc,
+            xtb_path=env_set.xtb_path(),
+            output_dir=os.path.join(output_dir, f'conf_{id_}_ey'),
+            num_cores=4,
             charge=charge,
-            num_unpaired_electrons=free_e,
-            electronic_temperature=etemp,
             unlimited_memory=True,
-            solvent=solvent_str,
-            solvent_grid=solvent_grid
         )
-        if handle_failure and opt_failed:
-            energy = 10E24
-        else:
-            energy = xtb_energy.get_energy(cage)
+        energy = xtb_energy.get_energy(opt_conf)
         if energy < min_energy:
-            min_energy_conformer = file
+            min_energy_conformer = (
+                stk.BuildingBlock.init_from_molecule(opt_conf)
+            )
             min_energy = energy
-        ids.append(id)
-        energies.append(energy)
 
-    print('done', min_energy, min_energy_conformer)
-    cage = cage.with_structure_from_file(min_energy_conformer)
-
-    energies = [(i-min(energies))*2625.5 for i in energies]
-    fig, ax = scatter_plot(
-        X=ids, Y=energies,
-        xtitle='conformer id',
-        ytitle='rel. energy [kJmol$^{-1}$]',
-        xlim=(0, 201),
-        ylim=(-5, 1000)
+    logging.info(
+        f'lowest energy conformer ID {id_} with ey: {min_energy} a.u.'
     )
 
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(output_dir, f'{cage_name}_conf_energies.pdf'),
-        dpi=720,
-        bbox_inches='tight'
-    )
-    plt.close()
-
-    return cage
-
-
-def MOC_xtb_opt(
-    cage,
-    cage_name,
-    nc,
-    opt_level,
-    etemp,
-    charge,
-    free_e,
-    gfn_exec=None,
-    solvent=None
-):
-    """
-    Perform GFN2-xTB optimisation of MOC.
-    Parameters
-    ----------
-    cage : :class:`stk.ConstructedMolecule`
-        Cage to be optimised.
-    cage_name : :class:`str`
-        Name of cage.
-    Returns
-    -------
-    cage : :class:`stk.ConstructedMolecule`
-        Optimised cage.
-    """
-    raise NotImplementedError('no print')
-
-    if gfn_exec is None:
-        gfn_exec = '/home/atarzia/software/xtb-190806/bin/xtb'
-
-    if solvent is None:
-        solvent_str = None
-        solvent_grid = 'normal'
-    else:
-        solvent_str, solvent_grid = solvent
-
-    print(f'..........doing XTB optimisation of {cage_name}')
-    xtb_opt = stko.XTB(
-        xtb_path=gfn_exec,
-        output_dir=f'cage_opt_{cage_name}_xtb',
-        gfn_version=2,
-        num_cores=nc,
-        opt_level=opt_level,
-        charge=charge,
-        num_unpaired_electrons=free_e,
-        max_runs=1,
-        electronic_temperature=etemp,
-        calculate_hessian=False,
-        unlimited_memory=True,
-        solvent=solvent_str,
-        solvent_grid=solvent_grid
-    )
-    cage = xtb_opt.optimize(mol=cage)
-
-    return cage
+    return min_energy_conformer
 
 
 def optimisation_sequence(mol, name, charge, calc_dir):
     gulp1_output = os.path.join(calc_dir, f'{name}_gulp1.mol')
     gulp2_output = os.path.join(calc_dir, f'{name}_gulp2.mol')
+    gulpmd_output = os.path.join(calc_dir, f'{name}_gulpmd.mol')
+    xtbconfs_output = os.path.join(calc_dir, f'{name}_xtbconf.mol')
+    xtbopt_output = os.path.join(calc_dir, f'{name}_xtb.mol')
 
     if not os.path.exists(gulp1_output):
         output_dir = os.path.join(calc_dir, f'{name}_gulp1')
@@ -297,6 +124,84 @@ def optimisation_sequence(mol, name, charge, calc_dir):
     else:
         gulp2_mol = mol.with_structure_from_file(gulp2_output)
 
-    logging.warning('update this:')
-    final_mol = mol.with_structure_from_file(gulp2_output)
+    if not os.path.exists(gulpmd_output):
+        output_dir = os.path.join(calc_dir, f'{name}_gulpmd')
+
+        logging.info(f'UFF4MOF equilib MD of {name}')
+        gulp_MD = stko.GulpUFFMDOptimizer(
+            gulp_path=env_set.gulp_path(),
+            metal_FF={46: 'Pd4+2'},
+            metal_ligand_bond_order='',
+            output_dir = os.path.join(calc_dir, f'{name}_gulpmd'),
+            integrator='leapfrog verlet',
+            ensemble='nvt',
+            temperature=500,
+            timestep=0.25,
+            equilbration=0.5,
+            production=0.5,
+            N_conformers=2,
+            opt_conformers=False,
+            save_conformers=False,
+        )
+        gulp_MD.assign_FF(gulp2_mol)
+        gulpmd_mol = gulp_MD.optimize(mol=gulp2_mol)
+
+        logging.info(f'UFF4MOF production MD of {name}')
+        gulp_MD = stko.GulpUFFMDOptimizer(
+            gulp_path=env_set.gulp_path(),
+            metal_FF={46: 'Pd4+2'},
+            metal_ligand_bond_order='',
+            output_dir = os.path.join(calc_dir, f'{name}_gulpmd'),
+            integrator='leapfrog verlet',
+            ensemble='nvt',
+            temperature=500,
+            timestep=0.75,
+            equilbration=0.5,
+            production=100.0,
+            N_conformers=100,
+            opt_conformers=False,
+            save_conformers=True,
+        )
+        gulp_MD.assign_FF(gulpmd_mol)
+        gulpmd_mol = gulp_MD.optimize(mol=gulpmd_mol)
+        gulpmd_mol.write(gulpmd_output)
+    else:
+        gulpmd_mol = mol.with_structure_from_file(gulpmd_output)
+
+    if not os.path.exists(xtbconfs_output):
+        output_dir = os.path.join(calc_dir, f'{name}_xtbconfs')
+        conformer_dir = os.path.join(calc_dir, f'{name}_gulpmd')
+        logging.info(f'xtb conformer ranking of {name}')
+        xtb_conf_mol = xtb_conformer_opt(
+            mol=gulpmd_mol,
+            output_dir=output_dir,
+            conformer_dir=conformer_dir,
+            charge=charge,
+        )
+        xtb_conf_mol.write(xtbconfs_output)
+    else:
+        xtb_conf_mol = mol.with_structure_from_file(xtbconfs_output)
+
+    if not os.path.exists(xtbopt_output):
+        output_dir = os.path.join(calc_dir, f'{name}_xtbopt')
+        logging.info(f'xtb optimisation of {name}')
+        xtb_opt = stko.XTB(
+            gulp_path=env_set.xtb_path(),
+            output_dir=output_dir,
+            gfn_version=2,
+            num_cores=6,
+            charge=charge,
+            opt_level='extreme',
+            num_unpaired_electrons=0,
+            max_runs=1,
+            calculate_hessian=False,
+            unlimited_memory=True,
+            solvent=None,
+        )
+        xtbopt_mol = xtb_opt.optimize(mol=xtb_conf_mol)
+        xtbopt_mol.write(xtbopt_output)
+    else:
+        xtbopt_mol = mol.with_structure_from_file(xtbopt_output)
+
+    final_mol = mol.with_structure_from_file(xtbopt_mol)
     return final_mol
