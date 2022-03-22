@@ -16,6 +16,7 @@ import stk
 import stko
 
 from env_set import meta_path, calc_path, gulp_path
+from utilities import AromaticCNCFactory
 
 
 def main():
@@ -38,10 +39,8 @@ def main():
         os.mkdir(_cd)
 
     bidentate = stk.BuildingBlock(
-        smiles='NCCCN',
-        functional_groups=(stk.PrimaryAminoFactory(
-            deleters=(),
-        ), ),
+        smiles='C1=CC=NC(=C1)C2=CC=CC=N2',
+        functional_groups=(AromaticCNCFactory(), ),
     )
     pd = stk.BuildingBlock(
         smiles='[Pd+2]',
