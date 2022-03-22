@@ -37,7 +37,7 @@ def main():
     )
     me_path = meta_path()
     corner_bb = stk.BuildingBlock.init_from_file(
-        path=os.path.join(me_path, 'meta_opt.mol'),
+        path=os.path.join(me_path, 'meta_unopt.mol'),
         functional_groups=(
             stk.SmartsFunctionalGroupFactory(
                 smarts='[#46]~[#7]',
