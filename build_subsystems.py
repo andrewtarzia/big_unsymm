@@ -14,9 +14,10 @@ import sys
 import os
 import stk
 
-from env_set import cage_path, calc_path, meta_path
+from env_set import cage_path, calc_path, meta_path, liga_path
 from optimisation import optimisation_sequence
 from m6l6 import M6L6
+from utilities import AromaticCNC, AromaticCNCFactory
 
 
 def main():
@@ -29,37 +30,24 @@ def main():
     else:
         pass
 
-    lig_bb = stk.BuildingBlock(
-        smiles='C1=CC(=CC=C1Br)Br',
-        functional_groups=(stk.BromoFactory(), ),
+    li_path = liga_path()
+    lig_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(li_path, 'lig_lowe.mol'),
+        functional_groups=(AromaticCNCFactory(), ),
     )
     me_path = meta_path()
-    corner_bbs = {
-        'cis1m1p': stk.BuildingBlock.init_from_file(
-            path=os.path.join(me_path, 'cis1m1p_opt.mol'),
-            functional_groups=(stk.BromoFactory(), ),
+    corner_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 'meta_opt.mol'),
+        functional_groups=(
+            stk.SmartsFunctionalGroupFactory(
+                smarts='[#46]~[#7]',
+                bonders=(0, ),
+                deleters=(),
+                placers=(0, 1),
+            ),
         ),
-        'cis2m0p': stk.BuildingBlock.init_from_file(
-            path=os.path.join(me_path, 'cis2m0p_opt.mol'),
-            functional_groups=(stk.BromoFactory(), ),
-        ),
-        'cis0m2p': stk.BuildingBlock.init_from_file(
-            path=os.path.join(me_path, 'cis0m2p_opt.mol'),
-            functional_groups=(stk.BromoFactory(), ),
-        ),
-        'trans1m1p': stk.BuildingBlock.init_from_file(
-            path=os.path.join(me_path, 'trans1m1p_opt.mol'),
-            functional_groups=(stk.BromoFactory(), ),
-        ),
-        'trans2m0p': stk.BuildingBlock.init_from_file(
-            path=os.path.join(me_path, 'trans2m0p_opt.mol'),
-            functional_groups=(stk.BromoFactory(), ),
-        ),
-        'trans0m2p': stk.BuildingBlock.init_from_file(
-            path=os.path.join(me_path, 'trans0m2p_opt.mol'),
-            functional_groups=(stk.BromoFactory(), ),
-        ),
-    }
+    )
+
     _wd = cage_path()
     _cd = calc_path()
 
@@ -70,51 +58,41 @@ def main():
         os.mkdir(_cd)
 
     # Define series of topologies to build.
-    # _init_opts = stk.NullOptimizer()
-    _init_opts = stk.MCHammer(target_bond_length=2.5, num_steps=1000)
+    _init_opts = stk.NullOptimizer()
+    # _init_opts = stk.MCHammer(target_bond_length=2.5, num_steps=1000)
+    _react_factory = stk.DativeReactionFactory(
+        stk.GenericReactionFactory(
+            bond_orders={
+                frozenset({
+                    stk.GenericFunctionalGroup,
+                    AromaticCNC,
+                }): 9,
+            },
+        ),
+    )
+
     _topos = {
         # Triangles.
         'tri1': {
             'tg': stk.cage.M3L3Triangle(
-                corners={
-                    corner_bbs['cis0m2p']: (0, 1, 2),
-                },
+                corners=corner_bb,
                 linkers=lig_bb,
+                vertex_alignments={
+                    3: 0, 4: 0, 5: 0,
+                },
+                reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*3,
         },
         'tri2': {
             'tg': stk.cage.M3L3Triangle(
-                corners={
-                    corner_bbs['cis2m0p']: (0, 1, 2),
-                },
-                linkers=lig_bb,
-                optimizer=_init_opts,
-            ),
-            'charge': 2*3,
-        },
-        'tri3': {
-            'tg': stk.cage.M3L3Triangle(
-                corners={
-                    corner_bbs['cis1m1p']: (0, 1, 2),
-                },
+                corners=corner_bb,
                 linkers=lig_bb,
                 vertex_alignments={
-                    0: 1,
+                    3: 0, 4: 0, 5: 1,
                 },
-                optimizer=_init_opts,
-            ),
-            'charge': 2*3,
-        },
-        'tri4': {
-            'tg': stk.cage.M3L3Triangle(
-                corners={
-                    corner_bbs['cis0m2p']: (0, ),
-                    corner_bbs['cis2m0p']: (1, ),
-                    corner_bbs['cis1m1p']: (2, ),
-                },
-                linkers=lig_bb,
+                reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*3,
@@ -122,68 +100,48 @@ def main():
         # Squares.
         'sqr1': {
             'tg': stk.cage.M4L4Square(
-                corners={
-                    corner_bbs['cis0m2p']: (0, 1, 2, 3),
-                },
+                corners=corner_bb,
                 linkers=lig_bb,
+                vertex_alignments={
+                    4: 0, 5: 0, 6: 0, 7: 0,
+                },
+                reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*4,
         },
         'sqr2': {
             'tg': stk.cage.M4L4Square(
-                corners={
-                    corner_bbs['cis2m0p']: (0, 1, 2, 3),
-                },
+                corners=corner_bb,
                 linkers=lig_bb,
+                vertex_alignments={
+                    4: 0, 5: 1, 6: 0, 7: 1,
+                },
+                reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*4,
         },
         'sqr3': {
             'tg': stk.cage.M4L4Square(
-                corners={
-                    corner_bbs['cis2m0p']: (0, 2),
-                    corner_bbs['cis0m2p']: (1, 3),
-                },
+                corners=corner_bb,
                 linkers=lig_bb,
+                vertex_alignments={
+                    4: 0, 5: 0, 6: 1, 7: 0,
+                },
+                reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*4,
         },
         'sqr4': {
             'tg': stk.cage.M4L4Square(
-                corners={
-                    corner_bbs['cis1m1p']: (0, 1, 2, 3),
-                },
+                corners=corner_bb,
                 linkers=lig_bb,
-                vertex_alignments={0: 1},
-                optimizer=_init_opts,
-            ),
-            'charge': 2*4,
-        },
-        'sqr5': {
-            'tg': stk.cage.M4L4Square(
-                corners={
-                    corner_bbs['cis2m0p']: (0, ),
-                    corner_bbs['cis0m2p']: (1, ),
-                    corner_bbs['cis1m1p']: (2, 3),
+                vertex_alignments={
+                    4: 0, 5: 0, 6: 1, 7: 1,
                 },
-                linkers=lig_bb,
-                vertex_alignments={2: 1, 3: 1},
-                optimizer=_init_opts,
-            ),
-            'charge': 2*4,
-        },
-        'sqr6': {
-            'tg': stk.cage.M4L4Square(
-                corners={
-                    corner_bbs['cis2m0p']: (0, ),
-                    corner_bbs['cis0m2p']: (2, ),
-                    corner_bbs['cis1m1p']: (1, 3),
-                },
-                linkers=lig_bb,
-                vertex_alignments={3: 1},
+                reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*4,
@@ -191,20 +149,72 @@ def main():
         # Hexagons.
         'hex1': {
             'tg': M6L6(
-                corners={
-                    corner_bbs['trans0m2p']: (0, 1, 2, 3, 4, 5),
-                },
+                corners=corner_bb,
                 linkers=lig_bb,
+                vertex_alignments={
+                    6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0,
+                },
+                reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*6,
         },
         'hex2': {
             'tg': M6L6(
-                corners={
-                    corner_bbs['trans2m0p']: (0, 1, 2, 3, 4, 5),
-                },
+                corners=corner_bb,
                 linkers=lig_bb,
+                vertex_alignments={
+                    6: 0, 7: 1, 8: 0, 9: 0, 10: 0, 11: 0,
+                },
+                reaction_factory=_react_factory,
+                optimizer=_init_opts,
+            ),
+            'charge': 2*6,
+        },
+        'hex3': {
+            'tg': M6L6(
+                corners=corner_bb,
+                linkers=lig_bb,
+                vertex_alignments={
+                    6: 0, 7: 1, 8: 1, 9: 0, 10: 0, 11: 0,
+                },
+                reaction_factory=_react_factory,
+                optimizer=_init_opts,
+            ),
+            'charge': 2*6,
+        },
+        'hex4': {
+            'tg': M6L6(
+                corners=corner_bb,
+                linkers=lig_bb,
+                vertex_alignments={
+                    6: 0, 7: 1, 8: 0, 9: 1, 10: 0, 11: 0,
+                },
+                reaction_factory=_react_factory,
+                optimizer=_init_opts,
+            ),
+            'charge': 2*6,
+        },
+        'hex5': {
+            'tg': M6L6(
+                corners=corner_bb,
+                linkers=lig_bb,
+                vertex_alignments={
+                    6: 0, 7: 1, 8: 1, 9: 1, 10: 0, 11: 0,
+                },
+                reaction_factory=_react_factory,
+                optimizer=_init_opts,
+            ),
+            'charge': 2*6,
+        },
+        'hex6': {
+            'tg': M6L6(
+                corners=corner_bb,
+                linkers=lig_bb,
+                vertex_alignments={
+                    6: 0, 7: 1, 8: 0, 9: 1, 10: 0, 11: 1,
+                },
+                reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*6,
@@ -217,12 +227,9 @@ def main():
 
         tg = _topos[topo]['tg']
         charge = _topos[topo]['charge']
-        if os.path.exists(unopt_file):
-            unopt_mol = stk.BuildingBlock.init_from_file(unopt_file)
-        else:
-            logging.info(f'building {topo}')
-            unopt_mol = stk.ConstructedMolecule(tg)
-            unopt_mol.write(unopt_file)
+        logging.info(f'building {topo}')
+        unopt_mol = stk.ConstructedMolecule(tg)
+        unopt_mol.write(unopt_file)
 
         if not os.path.exists(opt_file):
             logging.info(f'optimising {topo}')

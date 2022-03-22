@@ -109,6 +109,9 @@ class M6L6(stk.cage.Cage):
             optimizer=optimizer,
         )
 
+    def _get_scale(self, building_block_vertices):
+        return 2*super()._get_scale(building_block_vertices)
+
     _a = 1
     _b = math.sqrt(3)/2 * _a
 
