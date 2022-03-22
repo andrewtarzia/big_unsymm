@@ -113,12 +113,12 @@ class M6L6(stk.cage.Cage):
     _b = math.sqrt(3)/2 * _a
 
     _vertex_prototypes = (
-        stk.cage.AngledVertex(0, [_a, 0, 0]),
-        stk.cage.AngledVertex(1, [_a/2, _b, 0]),
-        stk.cage.AngledVertex(2, [-_a/2, _b, 0]),
-        stk.cage.AngledVertex(3, [-_a, 0, 0]),
-        stk.cage.AngledVertex(4, [-_a/2, -_b, 0]),
-        stk.cage.AngledVertex(5, [_a/2, -_b, 0]),
+        stk.cage.LinearVertex(0, [_a, 0, 0]),
+        stk.cage.LinearVertex(1, [_a/2, _b, 0]),
+        stk.cage.LinearVertex(2, [-_a/2, _b, 0]),
+        stk.cage.LinearVertex(3, [-_a, 0, 0]),
+        stk.cage.LinearVertex(4, [-_a/2, -_b, 0]),
+        stk.cage.LinearVertex(5, [_a/2, -_b, 0]),
 
         stk.cage.LinearVertex(6, [_b, _a/2, 0], False),
         stk.cage.LinearVertex(7, [0, _a, 0], False),
