@@ -70,8 +70,8 @@ def main():
         os.mkdir(_cd)
 
     # Define series of topologies to build.
-    _init_opts = stk.NullOptimizer()
-    # _init_opts = stk.MCHammer(target_bond_length=2.5, num_steps=1000)
+    # _init_opts = stk.NullOptimizer()
+    _init_opts = stk.MCHammer(target_bond_length=2.5, num_steps=1000)
     _topos = {
         # Triangles.
         'tri1': {
@@ -217,9 +217,13 @@ def main():
 
         tg = _topos[topo]['tg']
         charge = _topos[topo]['charge']
-        logging.info(f'building {topo}')
-        unopt_mol = stk.ConstructedMolecule(tg)
-        unopt_mol.write(unopt_file)
+        if os.path.exists(unopt_file):
+            unopt_mol = stk.BuildingBlock.init_from_file(unopt_file)
+        else:
+            logging.info(f'building {topo}')
+            unopt_mol = stk.ConstructedMolecule(tg)
+            unopt_mol.write(unopt_file)
+
         if not os.path.exists(opt_file):
             logging.info(f'optimising {topo}')
             opt_mol = optimisation_sequence(
