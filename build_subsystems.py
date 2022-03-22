@@ -70,13 +70,14 @@ def main():
         os.mkdir(_cd)
 
     # Define series of topologies to build.
-    _init_opts = stk.MCHammer(target_bond_length=2.5, num_steps=1000)
+    _init_opts = stk.NullOptimizer()
+    # _init_opts = stk.MCHammer(target_bond_length=2.5, num_steps=1000)
     _topos = {
         # Triangles.
         'tri1': {
             'tg': stk.cage.M3L3Triangle(
                 corners={
-                    corner_bbs['cis0m2p']: (0, 1, 2)
+                    corner_bbs['cis0m2p']: (0, 1, 2),
                 },
                 linkers=lig_bb,
                 optimizer=_init_opts,
@@ -86,7 +87,32 @@ def main():
         'tri2': {
             'tg': stk.cage.M3L3Triangle(
                 corners={
-                    corner_bbs['cis2m0p']: (0, 1, 2)
+                    corner_bbs['cis2m0p']: (0, 1, 2),
+                },
+                linkers=lig_bb,
+                optimizer=_init_opts,
+            ),
+            'charge': 2*3,
+        },
+        'tri3': {
+            'tg': stk.cage.M3L3Triangle(
+                corners={
+                    corner_bbs['cis1m1p']: (0, 1, 2),
+                },
+                linkers=lig_bb,
+                vertex_alignments={
+                    0: 1,
+                },
+                optimizer=_init_opts,
+            ),
+            'charge': 2*3,
+        },
+        'tri4': {
+            'tg': stk.cage.M3L3Triangle(
+                corners={
+                    corner_bbs['cis0m2p']: (0, ),
+                    corner_bbs['cis2m0p']: (1, ),
+                    corner_bbs['cis1m1p']: (2, ),
                 },
                 linkers=lig_bb,
                 optimizer=_init_opts,
@@ -97,7 +123,7 @@ def main():
         'sqr1': {
             'tg': stk.cage.M4L4Square(
                 corners={
-                    corner_bbs['cis0m2p']: (0, 1, 2, 3)
+                    corner_bbs['cis0m2p']: (0, 1, 2, 3),
                 },
                 linkers=lig_bb,
                 optimizer=_init_opts,
@@ -107,9 +133,57 @@ def main():
         'sqr2': {
             'tg': stk.cage.M4L4Square(
                 corners={
-                    corner_bbs['cis2m0p']: (0, 1, 2, 3)
+                    corner_bbs['cis2m0p']: (0, 1, 2, 3),
                 },
                 linkers=lig_bb,
+                optimizer=_init_opts,
+            ),
+            'charge': 2*4,
+        },
+        'sqr3': {
+            'tg': stk.cage.M4L4Square(
+                corners={
+                    corner_bbs['cis2m0p']: (0, 2),
+                    corner_bbs['cis0m2p']: (1, 3),
+                },
+                linkers=lig_bb,
+                optimizer=_init_opts,
+            ),
+            'charge': 2*4,
+        },
+        'sqr4': {
+            'tg': stk.cage.M4L4Square(
+                corners={
+                    corner_bbs['cis1m1p']: (0, 1, 2, 3),
+                },
+                linkers=lig_bb,
+                vertex_alignments={0: 1},
+                optimizer=_init_opts,
+            ),
+            'charge': 2*4,
+        },
+        'sqr5': {
+            'tg': stk.cage.M4L4Square(
+                corners={
+                    corner_bbs['cis2m0p']: (0, ),
+                    corner_bbs['cis0m2p']: (1, ),
+                    corner_bbs['cis1m1p']: (2, 3),
+                },
+                linkers=lig_bb,
+                vertex_alignments={2: 1, 3: 1},
+                optimizer=_init_opts,
+            ),
+            'charge': 2*4,
+        },
+        'sqr6': {
+            'tg': stk.cage.M4L4Square(
+                corners={
+                    corner_bbs['cis2m0p']: (0, ),
+                    corner_bbs['cis0m2p']: (2, ),
+                    corner_bbs['cis1m1p']: (1, 3),
+                },
+                linkers=lig_bb,
+                vertex_alignments={3: 1},
                 optimizer=_init_opts,
             ),
             'charge': 2*4,
@@ -118,7 +192,7 @@ def main():
         'hex1': {
             'tg': M6L6(
                 corners={
-                    corner_bbs['trans0m2p']: (0, 1, 2, 3, 4, 5)
+                    corner_bbs['trans0m2p']: (0, 1, 2, 3, 4, 5),
                 },
                 linkers=lig_bb,
                 optimizer=_init_opts,
@@ -128,7 +202,7 @@ def main():
         'hex2': {
             'tg': M6L6(
                 corners={
-                    corner_bbs['trans2m0p']: (0, 1, 2, 3, 4, 5)
+                    corner_bbs['trans2m0p']: (0, 1, 2, 3, 4, 5),
                 },
                 linkers=lig_bb,
                 optimizer=_init_opts,
