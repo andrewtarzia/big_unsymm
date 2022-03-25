@@ -157,10 +157,10 @@ def optimisation_sequence(mol, name, charge, calc_dir):
             temperature=500,
             timestep=0.75,
             equilbration=0.5,
-            production=100.0,
-            N_conformers=100,
-            opt_conformers=False,
-            save_conformers=True,
+            production=30.0,
+            N_conformers=30,
+            opt_conformers=True,
+            save_conformers=False,
         )
         gulp_MD.assign_FF(gulpmd_mol)
         gulpmd_mol = gulp_MD.optimize(mol=gulpmd_mol)
@@ -168,25 +168,25 @@ def optimisation_sequence(mol, name, charge, calc_dir):
     else:
         gulpmd_mol = mol.with_structure_from_file(gulpmd_output)
 
-    if not os.path.exists(xtbconfs_output):
-        output_dir = os.path.join(calc_dir, f'{name}_xtbconfs')
-        conformer_dir = os.path.join(calc_dir, f'{name}_gulpmd')
-        logging.info(f'xtb conformer ranking of {name}')
-        xtb_conf_mol = xtb_conformer_opt(
-            mol=gulpmd_mol,
-            output_dir=output_dir,
-            conformer_dir=conformer_dir,
-            charge=charge,
-        )
-        xtb_conf_mol.write(xtbconfs_output)
-    else:
-        xtb_conf_mol = mol.with_structure_from_file(xtbconfs_output)
+    # if not os.path.exists(xtbconfs_output):
+    #     output_dir = os.path.join(calc_dir, f'{name}_xtbconfs')
+    #     conformer_dir = os.path.join(calc_dir, f'{name}_gulpmd')
+    #     logging.info(f'xtb conformer ranking of {name}')
+    #     xtb_conf_mol = xtb_conformer_opt(
+    #         mol=gulpmd_mol,
+    #         output_dir=output_dir,
+    #         conformer_dir=conformer_dir,
+    #         charge=charge,
+    #     )
+    #     xtb_conf_mol.write(xtbconfs_output)
+    # else:
+    #     xtb_conf_mol = mol.with_structure_from_file(xtbconfs_output)
 
     if not os.path.exists(xtbopt_output):
         output_dir = os.path.join(calc_dir, f'{name}_xtbopt')
-        logging.info(f'xtb optimisation of {name}')
+        logging.info(f'final xtb optimisation of {name}')
         xtb_opt = stko.XTB(
-            gulp_path=env_set.xtb_path(),
+            xtb_path=env_set.xtb_path(),
             output_dir=output_dir,
             gfn_version=2,
             num_cores=6,
@@ -198,10 +198,10 @@ def optimisation_sequence(mol, name, charge, calc_dir):
             unlimited_memory=True,
             solvent=None,
         )
-        xtbopt_mol = xtb_opt.optimize(mol=xtb_conf_mol)
+        xtbopt_mol = xtb_opt.optimize(mol=gulpmd_mol)
         xtbopt_mol.write(xtbopt_output)
     else:
         xtbopt_mol = mol.with_structure_from_file(xtbopt_output)
 
-    final_mol = mol.with_structure_from_file(xtbopt_mol)
+    final_mol = mol.with_structure_from_file(xtbopt_output)
     return final_mol
