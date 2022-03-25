@@ -98,19 +98,40 @@ dependencies:
   - zlib=1.2.11=h36c2ea0_1013
   - zstd=1.5.2=ha95c52a_0
   - pip:
+    - charset-normalizer==2.0.12
     - dill==0.3.4
     - dnspython==2.2.1
+    - future==0.18.2
+    - idna==3.3
+    - latexcodec==2.0.1
     - mchammer==1.0.4
+    - monty==2022.3.12
+    - mpmath==1.2.1
     - multiprocess==0.70.12.2
     - networkx==2.7.1
+    - palettable==3.3.0
     - pathos==0.2.8
+    - plotly==5.6.0
     - pox==0.3.0
     - ppft==1.6.6.4
+    - pybtex==0.24.0
+    - pymatgen==2022.3.24
     - pymongo==4.0.2
+    - pyyaml==6.0
+    - requests==2.27.1
+    - ruamel-yaml==0.17.21
+    - ruamel-yaml-clib==0.2.6
     - scipy==1.8.0
     - seaborn==0.11.2
+    - spglib==1.16.3
     - spindry==0.0.91
     - stk==2022.1.26.0
     - stko==0.0.40
+    - sympy==1.10.1
+    - tabulate==0.8.9
+    - tenacity==8.0.1
+    - tqdm==4.63.1
+    - uncertainties==3.1.6
+    - urllib3==1.26.9
     - vabene==0.0.5
 prefix: /home/atarzia/anaconda3/envs/big_unsymm
