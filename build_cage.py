@@ -13,8 +13,9 @@ import logging
 import sys
 import os
 import stk
+import numpy as np
 
-from utilities import AromaticCNCFactory
+from utilities import AromaticCNC, AromaticCNCFactory
 from env_set import cage_path, calc_path, liga_path
 from optimisation import optimisation_sequence
 
@@ -59,7 +60,7 @@ def main():
         stk.GenericReactionFactory(
             bond_orders={
                 frozenset({
-                    stk.GenericFunctionalGroup,
+                    AromaticCNC,
                     stk.SingleAtom,
                 }): 9,
             },
@@ -204,6 +205,7 @@ def main():
                 charge=charge,
                 calc_dir=_cd,
             )
+            opt_mol = opt_mol.with_centroid(np.array((0, 0, 0)))
             opt_mol.write(opt_file)
 
 
