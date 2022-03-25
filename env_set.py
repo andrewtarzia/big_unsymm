@@ -14,6 +14,10 @@ def meta_path():
     return '/data/atarzia/projects/big_unsymm/meta/'
 
 
+def figu_path():
+    return '/data/atarzia/projects/big_unsymm/figures/'
+
+
 def cage_path():
     return '/data/atarzia/projects/big_unsymm/cages/'
 
