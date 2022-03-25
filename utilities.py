@@ -14,6 +14,12 @@ import os
 import stk
 import stko
 import numpy as np
+import networkx as nx
+import pymatgen.core as pmg
+from pymatgen.analysis.local_env import (
+    LocalStructOrderParams,
+)
+import json
 
 from env_set import xtb_path, crest_path
 
@@ -294,3 +300,335 @@ def angle_between(v1, v2, normal=None):
         if np.dot(normal, cross) < 0:
             angle = -angle
     return angle
+
+
+def convert_stk_to_pymatgen(stk_mol):
+    """
+    Convert stk.Molecule to pymatgen.Molecule.
+
+    Parameters
+    ----------
+    stk_mol : :class:`stk.Molecule`
+        Stk molecule to convert.
+
+    Returns
+    -------
+    pmg_mol : :class:`pymatgen.Molecule`
+        Corresponding pymatgen Molecule.
+
+    """
+    stk_mol.write('temp.xyz')
+    pmg_mol = pmg.Molecule.from_file('temp.xyz')
+    os.system('rm temp.xyz')
+
+    return pmg_mol
+
+
+def calculate_sites_order_values(
+    molecule,
+    site_idxs,
+    target_species_type=None,
+    neigh_idxs=None
+):
+    """
+    Calculate order parameters around metal centres.
+
+    Parameters
+    ----------
+    molecule : :class:`pmg.Molecule` or :class:`pmg.Structure`
+        Pymatgen (pmg) molecule/structure to analyse.
+
+    site_idxs : :class:`list` of :class:`int`
+        Atom ids of sites to calculate OP of.
+
+    target_species_type : :class:`str`
+        Target neighbour element to use in OP calculation.
+        Defaults to :class:`NoneType` if no target species is known.
+
+    neigh_idxs : :class:`list` of :class:`list` of :class:`int`
+        Neighbours of each atom in site_idx. Ordering is important.
+        Defaults to :class:`NoneType` for when using
+        :class:`pmg.Structure` - i.e. a structure with a lattice.
+
+    Returns
+    -------
+    results : :class:`dict`
+        Dictionary of format
+        site_idx: dict of order parameters
+        {
+            `oct`: :class:`float`,
+            `sq_plan`: :class:`float`,
+            `q2`: :class:`float`,
+            `q4`: :class:`float`,
+            `q6`: :class:`float`
+        }.
+
+    """
+
+    results = {}
+
+    if target_species_type is None:
+        targ_species = None
+    else:
+        targ_species = pmg.Species(target_species_type)
+
+    # Define local order parameters class based on desired types.
+    types = [
+        'sq_plan',  # Square planar envs.
+    ]
+    loc_ops = LocalStructOrderParams(
+        types=types,
+    )
+    if neigh_idxs is None:
+        for site in site_idxs:
+            site_results = loc_ops.get_order_parameters(
+                structure=molecule,
+                n=site,
+                target_spec=[targ_species]
+            )
+            results[site] = {i: j for i, j in zip(types, site_results)}
+    else:
+        for site, neigh in zip(site_idxs, neigh_idxs):
+            site_results = loc_ops.get_order_parameters(
+                structure=molecule,
+                n=site,
+                indices_neighs=neigh,
+                target_spec=targ_species
+            )
+            results[site] = {i: j for i, j in zip(types, site_results)}
+
+    return results
+
+
+def get_order_values(mol, metal, per_site=False):
+    """
+    Calculate order parameters around metal centres.
+
+    Parameters
+    ----------
+    mol : :class:`stk.ConstructedMolecule`
+        stk molecule to analyse.
+
+    metal : :class:`int`
+        Element number of metal atom.
+
+    per_site : :class:`bool`
+        Defaults to False. True if the OPs for each site are desired.
+
+    Returns
+    -------
+    results : :class:`dict`
+        Dictionary of order parameter max/mins/averages if `per_site`
+        is False.
+
+    """
+
+    pmg_mol = convert_stk_to_pymatgen(stk_mol=mol)
+    # Get sites of interest and their neighbours.
+    sites = []
+    neighs = []
+    for atom in mol.get_atoms():
+        if atom.get_atomic_number() == metal:
+            sites.append(atom.get_id())
+            bonds = [
+                i
+                for i in mol.get_bonds()
+                if i.get_atom1().get_id() == atom.get_id()
+                or i.get_atom2().get_id() == atom.get_id()
+            ]
+            a_neigh = []
+            for b in bonds:
+                if b.get_atom1().get_id() == atom.get_id():
+                    a_neigh.append(b.get_atom2().get_id())
+                elif b.get_atom2().get_id() == atom.get_id():
+                    a_neigh.append(b.get_atom1().get_id())
+            neighs.append(a_neigh)
+
+    order_values = calculate_sites_order_values(
+        molecule=pmg_mol,
+        site_idxs=sites,
+        neigh_idxs=neighs,
+    )
+
+    if per_site:
+        results = order_values
+        return results
+    else:
+        # Get max, mins and averages of all OPs for the whole molecule.
+        OPs = [order_values[i].keys() for i in order_values][0]
+        OP_lists = {}
+        for OP in OPs:
+            OP_lists[OP] = [order_values[i][OP] for i in order_values]
+
+        results = {
+            # OP: (min, max, avg)
+            i: {
+                'min': min(OP_lists[i]),
+                'max': max(OP_lists[i]),
+                'avg': np.average(OP_lists[i])
+            }
+            for i in OP_lists
+        }
+
+        return results
+
+
+def get_organic_linkers(
+    cage,
+    metal_atom_nos,
+    calc_dir,
+    file_prefix=None,
+):
+    """
+    Extract a list of organic linker .Molecules from a cage.
+
+    Parameters
+    ----------
+    cage : :class:`stk.Molecule`
+        Molecule to get the organic linkers from.
+
+    metal_atom_nos : :class:`iterable` of :class:`int`
+        The atomic number of metal atoms to remove from structure.
+
+    file_prefix : :class:`str`, optional
+        Prefix to file name of each output ligand structure.
+        Eventual file name is:
+        "file_prefix"{number of atoms}_{idx}_{i}.mol
+        Where `idx` determines if a molecule is unique by smiles.
+
+    Returns
+    -------
+    org_lig : :class:`dict` of :class:`stk.BuildingBlock`
+        Dictionary of building blocks where the key is the file name,
+        and the value is the stk building block.
+
+    smiles_keys : :class:`dict` of :class:`int`
+        Key is the linker smiles, value is the idx of that smiles.
+
+    """
+
+    org_lig = {}
+
+    # Produce a graph from the cage that does not include metals.
+    cage_g = nx.Graph()
+    atom_ids_in_G = set()
+    for atom in cage.get_atoms():
+        if atom.get_atomic_number() in metal_atom_nos:
+            continue
+        cage_g.add_node(atom)
+        atom_ids_in_G.add(atom.get_id())
+
+    # Add edges.
+    for bond in cage.get_bonds():
+        a1id = bond.get_atom1().get_id()
+        a2id = bond.get_atom2().get_id()
+        if a1id in atom_ids_in_G and a2id in atom_ids_in_G:
+            cage_g.add_edge(bond.get_atom1(), bond.get_atom2())
+
+    # Get disconnected subgraphs as molecules.
+    # Sort and sort atom ids to ensure molecules are read by RDKIT
+    # correctly.
+    connected_graphs = [
+        sorted(subgraph, key=lambda a: a.get_id())
+        for subgraph in sorted(nx.connected_components(cage_g))
+    ]
+    smiles_keys = {}
+    for i, cg in enumerate(connected_graphs):
+        # Get atoms from nodes.
+        atoms = list(cg)
+        atom_ids = [i.get_id() for i in atoms]
+        cage.write(
+            'temporary_linker.mol',
+            atom_ids=atom_ids,
+        )
+        temporary_linker = stk.BuildingBlock.init_from_file(
+            'temporary_linker.mol'
+        ).with_canonical_atom_ordering()
+        smiles_key = stk.Smiles().get_key(temporary_linker)
+        if smiles_key not in smiles_keys:
+            smiles_keys[smiles_key] = len(smiles_keys.values())+1
+        idx = smiles_keys[smiles_key]
+        sgt = str(len(atoms))
+        # Write to mol file.
+        if file_prefix is None:
+            filename_ = f'organic_linker_s{sgt}_{idx}_{i}.mol'
+        else:
+            filename_ = f'{file_prefix}{sgt}_{idx}_{i}.mol'
+
+        org_lig[filename_] = temporary_linker
+        os.system('rm temporary_linker.mol')
+        # Rewrite to fix atom ids.
+        org_lig[filename_].write(os.path.join(calc_dir, filename_))
+        org_lig[filename_] = stk.BuildingBlock.init_from_file(
+            path=os.path.join(calc_dir, filename_)
+        )
+
+    return org_lig, smiles_keys
+
+
+def calculate_ligand_SE(
+    org_ligs,
+    lowe_ligand_energy,
+    output_json,
+    calc_dir,
+):
+
+    # Check if output file exists.
+    if not os.path.exists(output_json):
+        strain_energies = {}
+        # Iterate over ligands.
+        for lig in org_ligs:
+            stk_lig = org_ligs[lig]
+
+            # Calculate energy of extracted ligand.
+            energy_au = get_energy(
+                molecule=stk_lig,
+                name=lig,
+                charge=0,
+                calc_dir=calc_dir,
+            )
+            # kJ/mol.
+            E_extracted = energy_au * 2625.5
+            E_free = lowe_ligand_energy * 2625.5
+            # Add to list the strain energy:
+            # (E(extracted) - E(optimised/free))
+            lse = E_extracted - E_free
+            strain_energies[lig] = lse
+
+        # Write data.
+        with open(output_json, 'w') as f:
+            json.dump(strain_energies, f)
+
+    # Get data.
+    with open(output_json, 'r') as f:
+        strain_energies = json.load(f)
+
+    return strain_energies
+
+
+def get_energy(molecule, name, charge, calc_dir):
+    output_dir = os.path.join(calc_dir, f'{name}_xtbey')
+    output_file = os.path.join(calc_dir, f'{name}_xtb.ey')
+    if os.path.exists(output_file):
+        with open(output_file, 'r') as f:
+            lines = f.readlines()
+        for line in lines:
+            energy = float(line.rstrip())
+            break
+    else:
+        logging.info(f'final xtb energy calculation of {name}')
+        xtb = stko.XTBEnergy(
+            xtb_path=xtb_path(),
+            output_dir=output_dir,
+            gfn_version=2,
+            num_cores=6,
+            charge=charge,
+            num_unpaired_electrons=0,
+            unlimited_memory=True,
+        )
+        energy = xtb.get_energy(mol=molecule)
+        with open(output_file, 'w') as f:
+            f.write(f'{energy}\n')
+
+    # In a.u.
+    return energy
