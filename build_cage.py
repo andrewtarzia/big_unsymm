@@ -79,7 +79,7 @@ def main():
             ),
             'charge': 2*12,
         },
-        'oh': {
+        'A1': {
             'tg': stk.cage.M12L24(
                 building_blocks={
                     pd: range(0, 12),
@@ -105,7 +105,7 @@ def main():
             ),
             'charge': 2*12,
         },
-        's6': {
+        'A2': {
             'tg': stk.cage.M12L24(
                 building_blocks={
                     pd: range(0, 12),
@@ -131,7 +131,7 @@ def main():
             ),
             'charge': 2*12,
         },
-        'c4h': {
+        'A3': {
             'tg': stk.cage.M12L24(
                 building_blocks={
                     pd: range(0, 12),
@@ -157,7 +157,7 @@ def main():
             ),
             'charge': 2*12,
         },
-        'd2h': {
+        'C1': {
             'tg': stk.cage.M12L24(
                 building_blocks={
                     pd: range(0, 12),
