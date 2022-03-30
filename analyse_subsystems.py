@@ -19,11 +19,9 @@ import stk
 from env_set import calc_path, liga_path, subs_path
 from utilities import (
     get_order_values,
-    get_organic_linkers,
-    calculate_ligand_SE,
     get_energy,
 )
-from plotting import plot_energies, plot_ops, plot_strain_energies
+from plotting import plot_energies, plot_ops
 
 
 def get_min_order_parameter(molecule):
@@ -33,53 +31,6 @@ def get_min_order_parameter(molecule):
         metal=46
     )
     return order_results['sq_plan']['min']
-
-
-class UnexpectedNumLigands(Exception):
-    ...
-
-
-def get_sum_strain_energy(
-    molecule,
-    name,
-    exp_lig,
-    lowe_ligand,
-    calc_dir,
-):
-
-    ls_file = os.path.join(calc_dir, f'{name}_strain.json')
-
-    org_ligs, smiles_keys = get_organic_linkers(
-        cage=molecule,
-        metal_atom_nos=(46, ),
-        file_prefix=f'{name}_sg',
-        calc_dir=calc_dir,
-    )
-
-    num_unique_ligands = len(set(smiles_keys.values()))
-    if num_unique_ligands != exp_lig:
-        raise UnexpectedNumLigands(
-            f'{name} had {num_unique_ligands} unique ligands'
-            f', {exp_lig} were expected. Suggests bad '
-            'optimization. Recommend reoptimising structure.'
-        )
-
-    lowe_ligand_energy = get_energy(
-        molecule=lowe_ligand,
-        name='lig',
-        charge=0,
-        calc_dir=calc_dir,
-    )
-
-    lse_dict = calculate_ligand_SE(
-        org_ligs=org_ligs,
-        lowe_ligand_energy=lowe_ligand_energy,
-        output_json=f'{ls_file}.json',
-        calc_dir=calc_dir,
-    )
-
-    sum_strain = sum(lse_dict.values())
-    return sum_strain
 
 
 def main():
@@ -100,7 +51,6 @@ def main():
     _cd = calc_path()
 
     structure_files = glob.glob(os.path.join(_wd, '*_opt.mol'))
-    raise SystemExit(structure_files)
     logging.info(f'there are {len(structure_files)} structures.')
     structure_results = {
         i.split('/')[-1].replace('_opt.mol', ''): {}
@@ -114,7 +64,7 @@ def main():
         for s_file in structure_files:
             name = s_file.split('/')[-1].replace('_opt.mol', '')
             molecule = stk.BuildingBlock.init_from_file(s_file)
-            raise SystemExit('need to fix from here.')
+
             if 'tri' in name:
                 charge = 6
                 exp_lig = None
@@ -124,9 +74,7 @@ def main():
             elif 'hex' in name:
                 charge = 12
                 exp_lig = None
-            else:
-                charge = 24
-                exp_lig = 1
+                continue
 
             xtb_energy = get_energy(molecule, name, charge, _cd)
             structure_results[name]['xtb_energy'] = xtb_energy
@@ -136,29 +84,20 @@ def main():
                 min_order_param
             )
 
-            if exp_lig is None:
-                sum_strain_energy = 0
-            else:
-                sum_strain_energy = get_sum_strain_energy(
-                    molecule=molecule,
-                    name=name,
-                    exp_lig=exp_lig,
-                    lowe_ligand=lowe_ligand,
-                    calc_dir=_cd,
-                )
-
-            structure_results[name]['sum_strain_energy'] = (
-                sum_strain_energy
-            )
-
         with open(structure_res_file, 'w') as f:
             json.dump(structure_results, f)
 
     print(structure_results)
 
-    plot_energies(results_dict=structure_results)
-    plot_ops(results_dict=structure_results)
-    plot_strain_energies(results_dict=structure_results)
+    plot_energies(
+        results_dict=structure_results,
+        outname='subs_energies',
+        per_ligand=True,
+    )
+    plot_ops(
+        results_dict=structure_results,
+        outname='subs_ops',
+    )
 
 
 if __name__ == "__main__":

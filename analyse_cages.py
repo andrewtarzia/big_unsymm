@@ -146,9 +146,18 @@ def main():
 
     print(structure_results)
 
-    plot_energies(results_dict=structure_results)
-    plot_ops(results_dict=structure_results)
-    plot_strain_energies(results_dict=structure_results)
+    plot_energies(
+        results_dict=structure_results,
+        outname='cage_energies',
+    )
+    plot_ops(
+        results_dict=structure_results,
+        outname='cage_ops',
+    )
+    plot_strain_energies(
+        results_dict=structure_results,
+        outname='cage_strain_energies',
+    )
 
 
 if __name__ == "__main__":
