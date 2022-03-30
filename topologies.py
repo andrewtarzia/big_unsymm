@@ -159,3 +159,42 @@ class M12L24(stk.cage.M12L24):
 
     def _get_scale(self, building_block_vertices):
         return 1.5*super()._get_scale(building_block_vertices)
+
+
+class OneTwoSquarePlanar(stk.metal_complex.MetalComplex):
+
+    _metal_vertex_prototypes = (
+        stk.metal_complex.MetalVertex(0, [0, 0, 0]),
+    )
+    _ligand_vertex_prototypes = (
+        stk.metal_complex.MonoDentateLigandVertex(1, [2.5, 0, 0]),
+        stk.metal_complex.MonoDentateLigandVertex(2, [0, 2.5, 0]),
+        stk.metal_complex.BiDentateLigandVertex(3, [-2.5, -2.5, 0]),
+    )
+
+    _edge_prototypes = (
+        stk.Edge(
+            id=0,
+            vertex1=_metal_vertex_prototypes[0],
+            vertex2=_ligand_vertex_prototypes[0],
+            position=[1.5, 0, 0],
+        ),
+        stk.Edge(
+            id=1,
+            vertex1=_metal_vertex_prototypes[0],
+            vertex2=_ligand_vertex_prototypes[1],
+            position=[0, 1.5, 0],
+        ),
+        stk.Edge(
+            id=2,
+            vertex1=_metal_vertex_prototypes[0],
+            vertex2=_ligand_vertex_prototypes[2],
+            position=[-1.5, 0, 0],
+        ),
+        stk.Edge(
+            id=3,
+            vertex1=_metal_vertex_prototypes[0],
+            vertex2=_ligand_vertex_prototypes[2],
+            position=[0, -1.5, 0],
+        ),
+    )
