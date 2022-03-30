@@ -13,8 +13,12 @@ import logging
 import sys
 import os
 import stk
+import stko
 
-from env_set import meta_path, calc_path
+from env_set import calc_path, meta_path, gulp_path
+from spinner import rotate_fgs
+from utilities import AromaticCNCFactory
+from topologies import OneTwoSquarePlanar
 
 
 def main():
@@ -33,15 +37,17 @@ def main():
     if not os.path.exists(_wd):
         os.mkdir(_wd)
 
-    if not os.path.exists(_cd):
-        os.mkdir(_cd)
-
     bidentate = stk.BuildingBlock(
-        smiles='NCCN',
-        functional_groups=(stk.PrimaryAminoFactory(
-            bonders=(1, ),
-            deleters=(),
-        ), ),
+        smiles='C1=C(CCCC2=CC=CC=N2)N=CC=C1',
+        functional_groups=(AromaticCNCFactory(), ),
+    )
+    monodentate1 = stk.BuildingBlock(
+        smiles='C1=CN=CC=C1Br',
+        functional_groups=(AromaticCNCFactory(), ),
+    )
+    monodentate2 = stk.BuildingBlock(
+        smiles='C1=CC(=CN=C1)C2=CC=C(C=C2)Br',
+        functional_groups=(AromaticCNCFactory(), ),
     )
     pd = stk.BuildingBlock(
         smiles='[Pd+2]',
@@ -52,16 +58,114 @@ def main():
         position_matrix=[[0, 0, 0]],
     )
 
+    # Define series of topologies to build.
+    _topos = {
+        'm1': {
+            'tg': OneTwoSquarePlanar(
+                metals=pd,
+                ligands={
+                    monodentate1: (0, ),
+                    monodentate2: (1, ),
+                    bidentate: (2, ),
+                },
+            ),
+            'charge': 2*1,
+        },
+        'm2': {
+            'tg': OneTwoSquarePlanar(
+                metals=pd,
+                ligands={
+                    monodentate2: (0, 1),
+                    bidentate: (2, ),
+                },
+            ),
+            'charge': 2*1,
+        },
+        'm3': {
+            'tg': OneTwoSquarePlanar(
+                metals=pd,
+                ligands={
+                    monodentate1: (0, 1),
+                    bidentate: (2, ),
+                },
+            ),
+            'charge': 2*1,
+        },
+        'm4': {
+            'tg': OneTwoSquarePlanar(
+                metals=pd,
+                ligands={
+                    monodentate1: (1, ),
+                    monodentate2: (0, ),
+                    bidentate: (2, ),
+                },
+            ),
+            'charge': 2*1,
+        },
+    }
+    # Build them all.
+    for topo in _topos:
+        unopt_file = os.path.join(_wd, f'{topo}_unopt.mol')
+        rot_file = os.path.join(_wd, f'{topo}_rot.mol')
+        opt_file = os.path.join(_wd, f'{topo}_opt.mol')
+
+        tg = _topos[topo]['tg']
+        charge = _topos[topo]['charge']
+        logging.info(f'building {topo}')
+        unopt_mol = stk.ConstructedMolecule(tg)
+        unopt_mol.write(unopt_file)
+
+        logging.info(f'Gulp opt of {topo}')
+        output_dir = os.path.join(_cd, f'{topo}_gulp')
+        gulp_opt = stko.GulpUFFOptimizer(
+            gulp_path=gulp_path(),
+            maxcyc=300,
+            metal_FF={46: 'Pd4+2'},
+            metal_ligand_bond_order='',
+            output_dir=output_dir,
+            conjugate_gradient=True,
+        )
+        gulp_opt.assign_FF(unopt_mol)
+        gulp_mol = gulp_opt.optimize(mol=unopt_mol)
+
+        gulp_opt = stko.GulpUFFOptimizer(
+            gulp_path=gulp_path(),
+            maxcyc=300,
+            metal_FF={46: 'Pd4+2'},
+            metal_ligand_bond_order='',
+            output_dir=output_dir,
+            conjugate_gradient=False,
+        )
+        gulp_opt.assign_FF(gulp_mol)
+        gulp_mol = gulp_opt.optimize(mol=gulp_mol)
+        gulp_mol.write(opt_file)
+
+
+        continue
+    raise SystemExit()
+
     meta_unopt = os.path.join(_wd, 'meta_unopt.mol')
+    meta_opt = os.path.join(_wd, 'meta_opt.mol')
 
     logging.info(f'building metal')
     sqpl_unopt = stk.ConstructedMolecule(
-        topology_graph=stk.metal_complex.CisProtectedSquarePlanar(
+        topology_graph=OneTwoSquarePlanar(
             metals=pd,
-            ligands=bidentate,
+            ligands={
+                monodentate: (0, 1),
+                bidentate: (2, ),
+            },
         ),
     )
     sqpl_unopt.write(meta_unopt)
+
+
+    sqpl_opt = rotate_fgs(stk.BuildingBlock.init_from_molecule(
+        molecule=gulp_mol,
+        functional_groups=(stk.BromoFactory(), ),
+    ))
+    sqpl_opt.write(meta_opt)
+
 
 
 if __name__ == "__main__":
