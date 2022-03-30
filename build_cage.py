@@ -18,6 +18,7 @@ import numpy as np
 from utilities import AromaticCNC, AromaticCNCFactory
 from env_set import cage_path, calc_path, liga_path
 from optimisation import optimisation_sequence
+from topologies import M12L24
 
 
 def main():
@@ -69,7 +70,7 @@ def main():
 
     _topos = {
         'def': {
-            'tg': stk.cage.M12L24(
+            'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
                     lig_bb: range(12, 36),
@@ -80,7 +81,7 @@ def main():
             'charge': 2*12,
         },
         'A1': {
-            'tg': stk.cage.M12L24(
+            'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
                     lig_bb: range(12, 36),
@@ -106,7 +107,7 @@ def main():
             'charge': 2*12,
         },
         'A2': {
-            'tg': stk.cage.M12L24(
+            'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
                     lig_bb: range(12, 36),
@@ -132,7 +133,7 @@ def main():
             'charge': 2*12,
         },
         'A3': {
-            'tg': stk.cage.M12L24(
+            'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
                     lig_bb: range(12, 36),
@@ -158,7 +159,7 @@ def main():
             'charge': 2*12,
         },
         'C1': {
-            'tg': stk.cage.M12L24(
+            'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
                     lig_bb: range(12, 36),

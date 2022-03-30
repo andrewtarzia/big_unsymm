@@ -153,3 +153,9 @@ class M6L6(stk.cage.Cage):
 
     _num_windows = 1
     _num_window_types = 1
+
+
+class M12L24(stk.cage.M12L24):
+
+    def _get_scale(self, building_block_vertices):
+        return 1.5*super()._get_scale(building_block_vertices)

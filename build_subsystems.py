@@ -16,7 +16,7 @@ import stk
 
 from env_set import cage_path, calc_path, meta_path, liga_path
 from optimisation import optimisation_sequence
-from m6l6 import M6L6
+from topologies import M6L6
 from utilities import AromaticCNC, AromaticCNCFactory
 
 
