@@ -135,7 +135,7 @@ def optimisation_sequence(mol, name, charge, calc_dir):
             output_dir = os.path.join(calc_dir, f'{name}_gulpmd'),
             integrator='leapfrog verlet',
             ensemble='nvt',
-            temperature=500,
+            temperature=1000,
             timestep=0.25,
             equilbration=0.5,
             production=0.5,
@@ -154,11 +154,11 @@ def optimisation_sequence(mol, name, charge, calc_dir):
             output_dir = os.path.join(calc_dir, f'{name}_gulpmd'),
             integrator='leapfrog verlet',
             ensemble='nvt',
-            temperature=500,
+            temperature=1000,
             timestep=0.75,
             equilbration=0.5,
-            production=30.0,
-            N_conformers=30,
+            production=200.0,
+            N_conformers=40,
             opt_conformers=True,
             save_conformers=False,
         )
@@ -204,4 +204,49 @@ def optimisation_sequence(mol, name, charge, calc_dir):
         xtbopt_mol = mol.with_structure_from_file(xtbopt_output)
 
     final_mol = mol.with_structure_from_file(xtbopt_output)
+    return final_mol
+
+
+def subsystem_optimisation_sequence(mol, name, charge, calc_dir):
+    gulp1_output = os.path.join(calc_dir, f'{name}_gulp1.mol')
+    gulp2_output = os.path.join(calc_dir, f'{name}_gulp2.mol')
+    final_output = gulp2_output
+
+    if not os.path.exists(gulp1_output):
+        output_dir = os.path.join(calc_dir, f'{name}_gulp1')
+        CG = True
+        logging.info(f'UFF4MOF optimisation 1 of {name} CG: {CG}')
+        gulp_opt = stko.GulpUFFOptimizer(
+            gulp_path=env_set.gulp_path(),
+            maxcyc=1000,
+            metal_FF={46: 'Pd4+2'},
+            metal_ligand_bond_order='',
+            output_dir=output_dir,
+            conjugate_gradient=CG,
+        )
+        gulp_opt.assign_FF(mol)
+        gulp1_mol = gulp_opt.optimize(mol=mol)
+        gulp1_mol.write(gulp1_output)
+    else:
+        gulp1_mol = mol.with_structure_from_file(gulp1_output)
+
+    if not os.path.exists(gulp2_output):
+        output_dir = os.path.join(calc_dir, f'{name}_gulp2')
+        CG = False
+        logging.info(f'UFF4MOF optimisation 2 of {name} CG: {CG}')
+        gulp_opt = stko.GulpUFFOptimizer(
+            gulp_path=env_set.gulp_path(),
+            maxcyc=1000,
+            metal_FF={46: 'Pd4+2'},
+            metal_ligand_bond_order='',
+            output_dir=output_dir,
+            conjugate_gradient=CG,
+        )
+        gulp_opt.assign_FF(gulp1_mol)
+        gulp2_mol = gulp_opt.optimize(mol=gulp1_mol)
+        gulp2_mol.write(gulp2_output)
+    else:
+        gulp2_mol = mol.with_structure_from_file(gulp2_output)
+
+    final_mol = mol.with_structure_from_file(final_output)
     return final_mol

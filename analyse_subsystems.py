@@ -3,7 +3,7 @@
 # Distributed under the terms of the MIT License.
 
 """
-Script to analyse all molecules constructed.
+Script to analyse all subsystems constructed.
 
 Author: Andrew Tarzia
 
@@ -16,7 +16,7 @@ import os
 import json
 import stk
 
-from env_set import cage_path, calc_path, liga_path
+from env_set import calc_path, liga_path, subs_path
 from utilities import (
     get_order_values,
     get_organic_linkers,
@@ -96,10 +96,11 @@ def main():
     lowe_ligand = stk.BuildingBlock.init_from_file(
         path=os.path.join(li_path, 'lig_lowe.mol'),
     )
-    _wd = cage_path()
+    _wd = subs_path()
     _cd = calc_path()
 
     structure_files = glob.glob(os.path.join(_wd, '*_opt.mol'))
+    raise SystemExit(structure_files)
     logging.info(f'there are {len(structure_files)} structures.')
     structure_results = {
         i.split('/')[-1].replace('_opt.mol', ''): {}
@@ -113,6 +114,7 @@ def main():
         for s_file in structure_files:
             name = s_file.split('/')[-1].replace('_opt.mol', '')
             molecule = stk.BuildingBlock.init_from_file(s_file)
+            raise SystemExit('need to fix from here.')
             if 'tri' in name:
                 charge = 6
                 exp_lig = None

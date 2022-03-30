@@ -21,14 +21,22 @@ utilities.py
 optimisation.py
     defines optimisation sequence.
     same as unsymm.
+    actually, more similar to cubism, with longer MD.
 
-m6l6.py
-    contains the new topology graph for the ring
+topologies.py
+    contains the new topology graph for the ring and updated M12L24
 
-structure_analysis.py
+analyse_cages.py
     for all desired systems:
         calculates total energies
         calculates metal-atom order parameter
         calculates ligand strain energy
+
+analyse_subsystems.py
+    for all desired systems:
+        calculates total energies
+        calculates metal-atom order parameter
+        calculates ligand strain energy
+
 
 plotting data...

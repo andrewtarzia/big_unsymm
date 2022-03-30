@@ -12,8 +12,6 @@ Author: Andrew Tarzia
 import matplotlib.pyplot as plt
 import os
 
-from sqlalchemy import all_
-
 from env_set import figu_path
 
 

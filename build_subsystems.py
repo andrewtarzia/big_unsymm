@@ -13,9 +13,10 @@ import logging
 import sys
 import os
 import stk
+import numpy as np
 
 from env_set import cage_path, calc_path, meta_path, liga_path
-from optimisation import optimisation_sequence
+from optimisation import subsystem_optimisation_sequence
 from topologies import M6L6
 from utilities import AromaticCNC, AromaticCNCFactory
 
@@ -37,7 +38,7 @@ def main():
     )
     me_path = meta_path()
     corner_bb = stk.BuildingBlock.init_from_file(
-        path=os.path.join(me_path, 'meta_unopt.mol'),
+        path=os.path.join(me_path, 'meta_opt.mol'),
         functional_groups=(
             stk.SmartsFunctionalGroupFactory(
                 smarts='[#46]~[#7]',
@@ -233,12 +234,13 @@ def main():
 
         if not os.path.exists(opt_file):
             logging.info(f'optimising {topo}')
-            opt_mol = optimisation_sequence(
+            opt_mol = subsystem_optimisation_sequence(
                 mol=unopt_mol,
                 name=topo,
                 charge=charge,
                 calc_dir=_cd,
             )
+            opt_mol = opt_mol.with_centroid(np.array((0, 0, 0)))
             opt_mol.write(opt_file)
 
 

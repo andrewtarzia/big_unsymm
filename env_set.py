@@ -22,6 +22,10 @@ def cage_path():
     return '/data/atarzia/projects/big_unsymm/cages/'
 
 
+def subs_path():
+    return '/data/atarzia/projects/big_unsymm/subsystems/'
+
+
 def calc_path():
     return '/data/atarzia/projects/big_unsymm/calculations/'
 
