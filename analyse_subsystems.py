@@ -74,7 +74,6 @@ def main():
             elif 'hex' in name:
                 charge = 12
                 exp_lig = None
-                continue
 
             xtb_energy = get_energy(molecule, name, charge, _cd)
             structure_results[name]['xtb_energy'] = xtb_energy
