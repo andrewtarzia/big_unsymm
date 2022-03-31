@@ -15,10 +15,9 @@ import os
 import stk
 import numpy as np
 
-from env_set import cage_path, calc_path, meta_path, liga_path
+from env_set import subs_path, calc_path, meta_path
 from optimisation import subsystem_optimisation_sequence
-from topologies import M6L6
-from utilities import AromaticCNC, AromaticCNCFactory
+from utilities import AromaticCNC
 
 
 def main():
@@ -31,25 +30,42 @@ def main():
     else:
         pass
 
-    li_path = liga_path()
-    lig_bb = stk.BuildingBlock.init_from_file(
-        path=os.path.join(li_path, 'lig_lowe.mol'),
-        functional_groups=(AromaticCNCFactory(), ),
-    )
     me_path = meta_path()
-    corner_bb = stk.BuildingBlock.init_from_file(
-        path=os.path.join(me_path, 'meta_opt.mol'),
-        functional_groups=(
-            stk.SmartsFunctionalGroupFactory(
-                smarts='[#46]~[#7]',
-                bonders=(0, ),
-                deleters=(),
-                placers=(0, 1),
-            ),
-        ),
+    pm_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 'm1_opt.mol'),
+        functional_groups=(stk.BromoFactory(), ),
+    )
+    mp_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 'm4_opt.mol'),
+        functional_groups=(stk.BromoFactory(), ),
+    )
+    mm_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 'm2_opt.mol'),
+        functional_groups=(stk.BromoFactory(), ),
+    )
+    pp_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 'm3_opt.mol'),
+        functional_groups=(stk.BromoFactory(), ),
     )
 
-    _wd = cage_path()
+    tpm_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 't1_opt.mol'),
+        functional_groups=(stk.BromoFactory(), ),
+    )
+    tmp_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 't4_opt.mol'),
+        functional_groups=(stk.BromoFactory(), ),
+    )
+    tmm_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 't2_opt.mol'),
+        functional_groups=(stk.BromoFactory(), ),
+    )
+    tpp_bb = stk.BuildingBlock.init_from_file(
+        path=os.path.join(me_path, 't3_opt.mol'),
+        functional_groups=(stk.BromoFactory(), ),
+    )
+
+    _wd = subs_path()
     _cd = calc_path()
 
     if not os.path.exists(_wd):
@@ -75,24 +91,22 @@ def main():
     _topos = {
         # Triangles.
         'tri1': {
-            'tg': stk.cage.M3L3Triangle(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    3: 0, 4: 0, 5: 0,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(pm_bb, mm_bb, pp_bb),
+                repeating_unit='AAA',
+                num_repeating_units=1,
+                orientations=(0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*3,
         },
         'tri2': {
-            'tg': stk.cage.M3L3Triangle(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    3: 0, 4: 0, 5: 1,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(pm_bb, mm_bb, pp_bb),
+                repeating_unit='ABC',
+                num_repeating_units=1,
+                orientations=(0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
@@ -100,48 +114,44 @@ def main():
         },
         # Squares.
         'sqr1': {
-            'tg': stk.cage.M4L4Square(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    4: 0, 5: 0, 6: 0, 7: 0,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(pm_bb, mm_bb, pp_bb, mp_bb),
+                repeating_unit='AAAA',
+                num_repeating_units=1,
+                orientations=(0, 0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*4,
         },
         'sqr2': {
-            'tg': stk.cage.M4L4Square(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    4: 0, 5: 1, 6: 0, 7: 1,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(pm_bb, mm_bb, pp_bb, mp_bb),
+                repeating_unit='BCBC',
+                num_repeating_units=1,
+                orientations=(0, 0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*4,
         },
         'sqr3': {
-            'tg': stk.cage.M4L4Square(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    4: 0, 5: 0, 6: 1, 7: 0,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(pm_bb, mm_bb, pp_bb, mp_bb),
+                repeating_unit='AABC',
+                num_repeating_units=1,
+                orientations=(0, 0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*4,
         },
         'sqr4': {
-            'tg': stk.cage.M4L4Square(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    4: 0, 5: 0, 6: 1, 7: 1,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(pm_bb, mm_bb, pp_bb, mp_bb),
+                repeating_unit='BDCA',
+                num_repeating_units=1,
+                orientations=(0, 1, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
@@ -149,81 +159,77 @@ def main():
         },
         # Hexagons.
         'hex1': {
-            'tg': M6L6(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(tpm_bb, tmm_bb, tpp_bb, tmp_bb),
+                repeating_unit='AAAAAA',
+                num_repeating_units=1,
+                orientations=(0, 0, 0, 0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*6,
         },
         'hex2': {
-            'tg': M6L6(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    6: 0, 7: 1, 8: 0, 9: 0, 10: 0, 11: 0,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(tpm_bb, tmm_bb, tpp_bb, tmp_bb),
+                repeating_unit='ACBAAA',
+                num_repeating_units=1,
+                orientations=(0, 0, 0, 0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*6,
         },
         'hex3': {
-            'tg': M6L6(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    6: 0, 7: 1, 8: 1, 9: 0, 10: 0, 11: 0,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(tpm_bb, tmm_bb, tpp_bb, tmp_bb),
+                repeating_unit='ACDBAA',
+                num_repeating_units=1,
+                orientations=(0, 0, 1, 0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*6,
         },
         'hex4': {
-            'tg': M6L6(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    6: 0, 7: 1, 8: 0, 9: 1, 10: 0, 11: 0,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(tpm_bb, tmm_bb, tpp_bb, tmp_bb),
+                repeating_unit='ACBCBA',
+                num_repeating_units=1,
+                orientations=(0, 0, 0, 0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*6,
         },
         'hex5': {
-            'tg': M6L6(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    6: 0, 7: 1, 8: 1, 9: 1, 10: 0, 11: 0,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(tpm_bb, tmm_bb, tpp_bb, tmp_bb),
+                repeating_unit='ACDDBA',
+                num_repeating_units=1,
+                orientations=(0, 0, 1, 1, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*6,
         },
         'hex6': {
-            'tg': M6L6(
-                corners=corner_bb,
-                linkers=lig_bb,
-                vertex_alignments={
-                    6: 0, 7: 1, 8: 0, 9: 1, 10: 0, 11: 1,
-                },
+            'tg': stk.macrocycle.Macrocycle(
+                building_blocks=(tpm_bb, tmm_bb, tpp_bb, tmp_bb),
+                repeating_unit='BCBCBC',
+                num_repeating_units=1,
+                orientations=(0, 0, 0, 0, 0, 0),
                 reaction_factory=_react_factory,
                 optimizer=_init_opts,
             ),
             'charge': 2*6,
         },
     }
+
     # Build them all.
     for topo in _topos:
         unopt_file = os.path.join(_wd, f'{topo}_unopt.mol')
+        rot_file = os.path.join(_wd, f'{topo}_rot.mol')
         opt_file = os.path.join(_wd, f'{topo}_opt.mol')
 
         tg = _topos[topo]['tg']

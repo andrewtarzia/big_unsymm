@@ -49,6 +49,10 @@ def main():
         smiles='C1=CC(=CN=C1)C2=CC=C(C=C2)Br',
         functional_groups=(AromaticCNCFactory(), ),
     )
+    monodentate3 = stk.BuildingBlock(
+        smiles='C1=CC=NC=C1',
+        functional_groups=(AromaticCNCFactory(), ),
+    )
     pd = stk.BuildingBlock(
         smiles='[Pd+2]',
         functional_groups=(
@@ -102,6 +106,48 @@ def main():
             ),
             'charge': 2*1,
         },
+        't1': {
+            'tg': stk.metal_complex.SquarePlanar(
+                metals=pd,
+                ligands={
+                    monodentate1: (2, ),
+                    monodentate2: (0, ),
+                    monodentate3: (1, 3),
+                },
+            ),
+            'charge': 2*1,
+        },
+        't2': {
+            'tg': stk.metal_complex.SquarePlanar(
+                metals=pd,
+                ligands={
+                    monodentate1: (0, 2),
+                    monodentate3: (1, 3),
+                },
+            ),
+            'charge': 2*1,
+        },
+        't3': {
+            'tg': stk.metal_complex.SquarePlanar(
+                metals=pd,
+                ligands={
+                    monodentate2: (0, 2),
+                    monodentate3: (1, 3),
+                },
+            ),
+            'charge': 2*1,
+        },
+        't4': {
+            'tg': stk.metal_complex.SquarePlanar(
+                metals=pd,
+                ligands={
+                    monodentate1: (0, ),
+                    monodentate2: (2, ),
+                    monodentate3: (1, 3),
+                },
+            ),
+            'charge': 2*1,
+        },
     }
     # Build them all.
     for topo in _topos:
@@ -115,57 +161,41 @@ def main():
         unopt_mol = stk.ConstructedMolecule(tg)
         unopt_mol.write(unopt_file)
 
-        logging.info(f'Gulp opt of {topo}')
-        output_dir = os.path.join(_cd, f'{topo}_gulp')
-        gulp_opt = stko.GulpUFFOptimizer(
-            gulp_path=gulp_path(),
-            maxcyc=300,
-            metal_FF={46: 'Pd4+2'},
-            metal_ligand_bond_order='',
-            output_dir=output_dir,
-            conjugate_gradient=True,
-        )
-        gulp_opt.assign_FF(unopt_mol)
-        gulp_mol = gulp_opt.optimize(mol=unopt_mol)
+        # Do some forced ligand rotations.
+        if 't' in topo:
+            rot_mol = rotate_fgs(stk.BuildingBlock.init_from_molecule(
+                molecule=unopt_mol,
+                functional_groups=(stk.BromoFactory(), ),
+            ))
+            rot_mol.write(rot_file)
+        else:
+            rot_mol = stk.BuildingBlock.init_from_molecule(unopt_mol)
 
-        gulp_opt = stko.GulpUFFOptimizer(
-            gulp_path=gulp_path(),
-            maxcyc=300,
-            metal_FF={46: 'Pd4+2'},
-            metal_ligand_bond_order='',
-            output_dir=output_dir,
-            conjugate_gradient=False,
-        )
-        gulp_opt.assign_FF(gulp_mol)
-        gulp_mol = gulp_opt.optimize(mol=gulp_mol)
-        gulp_mol.write(opt_file)
+        if not os.path.exists(opt_file):
+            logging.info(f'Gulp opt of {topo}')
+            output_dir = os.path.join(_cd, f'{topo}_gulp')
+            gulp_opt = stko.GulpUFFOptimizer(
+                gulp_path=gulp_path(),
+                maxcyc=300,
+                metal_FF={46: 'Pd4+2'},
+                metal_ligand_bond_order='',
+                output_dir=output_dir,
+                conjugate_gradient=True,
+            )
+            gulp_opt.assign_FF(rot_mol)
+            gulp_mol = gulp_opt.optimize(mol=rot_mol)
 
-
-        continue
-    raise SystemExit()
-
-    meta_unopt = os.path.join(_wd, 'meta_unopt.mol')
-    meta_opt = os.path.join(_wd, 'meta_opt.mol')
-
-    logging.info(f'building metal')
-    sqpl_unopt = stk.ConstructedMolecule(
-        topology_graph=OneTwoSquarePlanar(
-            metals=pd,
-            ligands={
-                monodentate: (0, 1),
-                bidentate: (2, ),
-            },
-        ),
-    )
-    sqpl_unopt.write(meta_unopt)
-
-
-    sqpl_opt = rotate_fgs(stk.BuildingBlock.init_from_molecule(
-        molecule=gulp_mol,
-        functional_groups=(stk.BromoFactory(), ),
-    ))
-    sqpl_opt.write(meta_opt)
-
+            gulp_opt = stko.GulpUFFOptimizer(
+                gulp_path=gulp_path(),
+                maxcyc=300,
+                metal_FF={46: 'Pd4+2'},
+                metal_ligand_bond_order='',
+                output_dir=output_dir,
+                conjugate_gradient=False,
+            )
+            gulp_opt.assign_FF(gulp_mol)
+            gulp_mol = gulp_opt.optimize(mol=gulp_mol)
+            gulp_mol.write(opt_file)
 
 
 if __name__ == "__main__":
