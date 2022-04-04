@@ -100,7 +100,7 @@ def main():
     _cd = calc_path()
 
     structure_files = glob.glob(os.path.join(_wd, '*_opt.mol'))
-    raise SystemExit(structure_files)
+
     logging.info(f'there are {len(structure_files)} structures.')
     structure_results = {
         i.split('/')[-1].replace('_opt.mol', ''): {}
