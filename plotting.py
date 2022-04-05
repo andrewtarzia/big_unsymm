@@ -22,12 +22,6 @@ def plot_strain_energies(results_dict, outname):
     _x_names = []
     all_values = []
     for struct in results_dict:
-        if 'tri' in struct:
-            continue
-        if 'sqr' in struct:
-            continue
-        if 'hex' in struct:
-            continue
         s_values = results_dict[struct]
         x_position += 1
         all_values.append((x_position, s_values['sum_strain_energy']))
@@ -42,7 +36,7 @@ def plot_strain_energies(results_dict, outname):
     )
 
     ax.tick_params(axis='both', which='major', labelsize=16)
-    ax.set_xlabel('ligand', fontsize=16)
+    ax.set_xlabel('structure', fontsize=16)
     ax.set_ylabel(r'sum strain energy [kJ mol$^{-1}$]', fontsize=16)
     # ax.set_xlim((0, 1))
     ax.set_ylim(0, None)
@@ -129,13 +123,14 @@ def plot_energies(results_dict, outname, per_ligand=False):
     )
 
     ax.tick_params(axis='both', which='major', labelsize=16)
-    ax.set_xlabel('ligand', fontsize=16)
+    ax.set_xlabel('structure', fontsize=16)
     if per_ligand:
-        ax.set_ylabel(r'rel. energy [kJ mol$^{-1}$]', fontsize=16)
-    else:
         ax.set_ylabel(
             r'rel. energy per L [kJ mol$^{-1}$]', fontsize=16
         )
+    else:
+        ax.set_ylabel(r'rel. energy [kJ mol$^{-1}$]', fontsize=16)
+
     # ax.set_xlim((0, 1))
     ax.set_ylim(-0.1, None)
     ax.set_xticks([i[0] for i in _x_names])

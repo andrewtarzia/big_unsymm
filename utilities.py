@@ -575,10 +575,16 @@ def calculate_ligand_SE(
 
     # Check if output file exists.
     if not os.path.exists(output_json):
+        logging.info(
+            f'calculating strain energy of target with 30 atoms.'
+        )
         strain_energies = {}
         # Iterate over ligands.
         for lig in org_ligs:
             stk_lig = org_ligs[lig]
+            # Only run for the target ligand.
+            if stk_lig.get_num_atoms() != 30:
+                continue
 
             # Calculate energy of extracted ligand.
             energy_au = get_energy(
@@ -616,7 +622,7 @@ def get_energy(molecule, name, charge, calc_dir):
             energy = float(line.rstrip())
             break
     else:
-        logging.info(f'final xtb energy calculation of {name}')
+        logging.info(f'xtb energy calculation of {name}')
         xtb = stko.XTBEnergy(
             xtb_path=xtb_path(),
             output_dir=output_dir,

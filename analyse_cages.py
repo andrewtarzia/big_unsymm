@@ -126,16 +126,13 @@ def main():
                 min_order_param
             )
 
-            if exp_lig is None:
-                sum_strain_energy = 0
-            else:
-                sum_strain_energy = get_sum_strain_energy(
-                    molecule=molecule,
-                    name=name,
-                    exp_lig=exp_lig,
-                    lowe_ligand=lowe_ligand,
-                    calc_dir=_cd,
-                )
+            sum_strain_energy = get_sum_strain_energy(
+                molecule=molecule,
+                name=name,
+                exp_lig=exp_lig,
+                lowe_ligand=lowe_ligand,
+                calc_dir=_cd,
+            )
 
             structure_results[name]['sum_strain_energy'] = (
                 sum_strain_energy
