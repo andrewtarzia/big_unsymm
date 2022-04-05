@@ -69,15 +69,16 @@ def rotate_fgs(mol):
     smolecule = get_supramolecule(mol)
 
     # Get rotatable components.
-    bromo_ids = tuple(
-        fg.get_bromine().get_id()
+    bonder_ids = [
+        i.get_id()
         for fg in mol.get_functional_groups()
-    )
+        for i in fg.get_bonders()
+    ]
     movable_components = {}
     for i, comp in enumerate(smolecule.get_components()):
         comp_atom_ids = set(i.get_id() for i in comp.get_atoms())
         movable = False
-        for b_id in bromo_ids:
+        for b_id in bonder_ids:
             if b_id in comp_atom_ids:
                 movable = True
         movable_components[i] = movable
@@ -87,18 +88,23 @@ def rotate_fgs(mol):
     )
 
     # Define atom ids that define vectors to move.
-    moving_pairs = tuple(
-        (fg.get_bromine().get_id(), fg.get_atom().get_id())
-        for fg in mol.get_functional_groups()
-    )
+    moving_pairs = []
+    for fg in mol.get_functional_groups():
+        bonder_ids = tuple(fg.get_bonder_ids())
+        all_ids = tuple(fg.get_atom_ids())
+        nonbonder_id_1 = [i for i in all_ids if i not in bonder_ids][0]
+        moving_pairs.append((bonder_ids[0], nonbonder_id_1))
+
+    moving_pairs = tuple(moving_pairs)
+
     cg = spd.Spinner(
         step_size=0.0,
-        rotation_step_size=0.5,
-        num_conformers=300,
-        max_attempts=500,
+        rotation_step_size=0.2,
+        num_conformers=50,
+        max_attempts=200,
         potential_function=FGPotential(
             moving_pairs=moving_pairs,
-            target=np.array((0, 0, 1)),
+            target=np.array((0, 0, -1)),
         ),
     )
     conformer = cg.get_final_conformer(
@@ -113,23 +119,28 @@ def rotate_bbs(mol):
     smolecule = get_supramolecule(mol)
     movable_components = tuple(
         i for i, c in enumerate(smolecule.get_components())
-        # Set to the known bb size.
-        if c.get_num_atoms() == 20
+        # Set to the known ligand size.
+        if c.get_num_atoms() == 30
+        # if c.get_num_atoms() != 1
     )
 
     # Define atom ids that define vectors to move.
-    moving_pairs = tuple(
-        tuple(i.get_id() for i in fg.get_bonders())
-        for fg in mol.get_functional_groups()
-    )
+    moving_pairs = []
+    for fg in mol.get_functional_groups():
+        bonder_ids = tuple(fg.get_bonder_ids())
+        all_ids = tuple(fg.get_atom_ids())
+        nonbonder_id_1 = [i for i in all_ids if i not in bonder_ids][0]
+        moving_pairs.append((bonder_ids[0], nonbonder_id_1))
+
+    moving_pairs = tuple(moving_pairs)
     cg = spd.Spinner(
         step_size=0.0,
-        rotation_step_size=0.5,
-        num_conformers=300,
+        rotation_step_size=0.2,
+        num_conformers=100,
         max_attempts=500,
         potential_function=FGPotential(
             moving_pairs=moving_pairs,
-            target=np.array((0, 0, 1)),
+            target=np.array((0, 0, -1)),
         ),
     )
     conformer = cg.get_final_conformer(
