@@ -143,3 +143,71 @@ def plot_energies(results_dict, outname, per_ligand=False):
         bbox_inches='tight'
     )
     plt.close()
+
+
+def plot_subs_energies(results_dict, outname):
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    tri_energies = []
+    sqr_energies = []
+    hex_energies = []
+    for struct in results_dict:
+        s_values = results_dict[struct]
+        y = s_values['xtb_energy']
+        x_position = int(struct[-1])
+        if 'tri' in struct:
+            tri_energies.append((x_position, y))
+        elif 'sqr' in struct:
+            sqr_energies.append((x_position, y))
+        elif 'hex' in struct:
+            hex_energies.append((x_position, y))
+
+    min_tri_energy = min([i[1] for i in tri_energies])
+    min_sqr_energy = min([i[1] for i in sqr_energies])
+    min_hex_energy = min([i[1] for i in hex_energies])
+    print(tri_energies, min_tri_energy)
+    print(sqr_energies, min_sqr_energy)
+    print(hex_energies, min_hex_energy)
+    ax.scatter(
+        x=[i[0] for i in tri_energies],
+        y=[(i[1]-min_tri_energy)*2625.5 for i in tri_energies],
+        c='gold',
+        edgecolors='k',
+        s=180,
+        label='tri'
+    )
+    ax.scatter(
+        x=[i[0] for i in sqr_energies],
+        y=[(i[1]-min_sqr_energy)*2625.5 for i in sqr_energies],
+        c='skyblue',
+        edgecolors='k',
+        s=180,
+        label='sqr'
+    )
+    ax.scatter(
+        x=[i[0] for i in hex_energies],
+        y=[(i[1]-min_hex_energy)*2625.5 for i in hex_energies],
+        c='forestgreen',
+        edgecolors='k',
+        s=180,
+        label='hex'
+    )
+
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    ax.set_xlabel('structure id', fontsize=16)
+    ax.set_ylabel(r'rel. energy [kJ mol$^{-1}$]', fontsize=16)
+
+    # ax.set_xlim((0, 1))
+    ax.set_ylim(-0.1, None)
+    # ax.set_xticks([i[0] for i in _x_names])
+    # ax.set_xticklabels([i[1] for i in _x_names])
+    ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figu_path(), f'{outname}.pdf'),
+        dpi=720,
+        bbox_inches='tight'
+    )
+    plt.close()

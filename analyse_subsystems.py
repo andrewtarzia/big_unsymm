@@ -23,7 +23,7 @@ from utilities import (
     get_organic_linkers,
     calculate_ligand_SE,
 )
-from plotting import plot_energies, plot_ops, plot_strain_energies
+from plotting import plot_subs_energies, plot_ops, plot_strain_energies
 
 
 def get_min_order_parameter(molecule):
@@ -147,10 +147,9 @@ def main():
 
     print(structure_results)
 
-    plot_energies(
+    plot_subs_energies(
         results_dict=structure_results,
         outname='subs_energies',
-        per_ligand=True,
     )
     plot_ops(
         results_dict=structure_results,
