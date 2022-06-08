@@ -211,3 +211,72 @@ def plot_subs_energies(results_dict, outname):
         bbox_inches='tight'
     )
     plt.close()
+
+
+def plot_man_subs_energies(results_dict, outname):
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    A1_energies = []
+    A2_energies = []
+    A3_energies = []
+    for struct in results_dict:
+        y = results_dict[struct]
+        x_position = int(struct[-1])
+        if 'A1' in struct:
+            A1_energies.append((x_position, y))
+        elif 'A2' in struct:
+            A2_energies.append((x_position, y))
+        elif 'A3' in struct:
+            A3_energies.append((x_position, y))
+
+    min_energy = min([
+        min([i[1] for i in A1_energies]),
+        min([i[1] for i in A2_energies]),
+        min([i[1] for i in A3_energies]),
+    ])
+    print(A1_energies, min_energy)
+    print(A2_energies)
+    print(A3_energies)
+    ax.scatter(
+        x=[i[0] for i in A1_energies],
+        y=[(i[1]-min_energy)*2625.5 for i in A1_energies],
+        c='gold',
+        edgecolors='k',
+        s=180,
+        label='A1'
+    )
+    ax.scatter(
+        x=[i[0] for i in A2_energies],
+        y=[(i[1]-min_energy)*2625.5 for i in A2_energies],
+        c='skyblue',
+        edgecolors='k',
+        s=180,
+        label='A2'
+    )
+    ax.scatter(
+        x=[i[0] for i in A3_energies],
+        y=[(i[1]-min_energy)*2625.5 for i in A3_energies],
+        c='forestgreen',
+        edgecolors='k',
+        s=180,
+        label='A3'
+    )
+
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    ax.set_xlabel('structure id', fontsize=16)
+    ax.set_ylabel(r'rel. energy [kJ mol$^{-1}$]', fontsize=16)
+
+    # ax.set_xlim((0, 1))
+    ax.set_ylim(-0.1, None)
+    # ax.set_xticks([i[0] for i in _x_names])
+    # ax.set_xticklabels([i[1] for i in _x_names])
+    ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figu_path(), f'{outname}.pdf'),
+        dpi=720,
+        bbox_inches='tight'
+    )
+    plt.close()

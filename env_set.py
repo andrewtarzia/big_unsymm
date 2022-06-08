@@ -1,37 +1,58 @@
-from pymongo import MongoClient
-from getpass import getpass
+import pathlib
 
 
 def xtb_path():
-    return '/home/atarzia/anaconda3/envs/big_unsymm/bin/xtb'
+    return pathlib.Path(
+        '/home/atarzia/anaconda3/envs/big_unsymm/bin/xtb'
+    )
 
 
 def liga_path():
-    return '/data/atarzia/projects/big_unsymm/liga/'
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/liga/'
+    )
 
 
 def meta_path():
-    return '/data/atarzia/projects/big_unsymm/meta/'
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/meta/'
+    )
 
 
 def figu_path():
-    return '/data/atarzia/projects/big_unsymm/figures/'
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/figures/'
+    )
 
 
 def cage_path():
-    return '/data/atarzia/projects/big_unsymm/cages/'
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/cages/'
+    )
+
+
+def manu_subs_path():
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/cages/manual_extraction/'
+    )
 
 
 def subs_path():
-    return '/data/atarzia/projects/big_unsymm/subsystems/'
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/subsystems/'
+    )
 
 
 def calc_path():
-    return '/data/atarzia/projects/big_unsymm/calculations/'
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/calculations/'
+    )
 
 
 def crest_path():
-    return '/data/atarzia/projects/big_unsymm/software/crest'
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/software/crest'
+    )
 
 
 def crest_conformer_settings(solvent=None):
@@ -54,4 +75,6 @@ def crest_conformer_settings(solvent=None):
 
 
 def gulp_path():
-    return '/home/atarzia/software/gulp-5.1/Src/gulp/gulp'
+    return pathlib.Path(
+        '/home/atarzia/software/gulp-5.1/Src/gulp/gulp'
+    )
