@@ -31,6 +31,12 @@ def cage_path():
     )
 
 
+def pd24_path():
+    return pathlib.Path(
+        '/data/atarzia/projects/big_unsymm/m24_structures/'
+    )
+
+
 def manu_subs_path():
     return pathlib.Path(
         '/data/atarzia/projects/big_unsymm/cages/manual_extraction/'
