@@ -63,6 +63,7 @@ def main():
         os.mkdir(_cd)
 
     unopt_files = glob.glob(str(_wd / '*.pdb'))
+    energies = {}
     for unopt_file in unopt_files:
         unopt_pdb = unopt_file.split('/')[-1]
         name = unopt_pdb.replace('.pdb', '')
@@ -111,11 +112,14 @@ def main():
 
         with open(opt_file, 'r') as f:
             line = f.readlines()[1]
-        print(line)
 
-        energy = 0
-        raise SystemExit('get ey')
-        logging.info(f'{name} optimised energy: {energy}')
+        energy = float(line.strip().split()[1])
+        energies[name] = energy
+
+    min_energy = min(energies.values())
+    for name in energies:
+        rel_energy = round((energies[name] - min_energy)*2625.5, 3)
+        logging.info(f'{name} optimised energy: {rel_energy} kJ.mol-1')
 
 
 if __name__ == "__main__":
