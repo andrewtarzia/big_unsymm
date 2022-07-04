@@ -80,7 +80,7 @@ def main():
             ),
             'charge': 2*12,
         },
-        'A1': {
+        'E1': {
             'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
@@ -106,7 +106,7 @@ def main():
             ),
             'charge': 2*12,
         },
-        'A2': {
+        'E2': {
             'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
@@ -132,7 +132,7 @@ def main():
             ),
             'charge': 2*12,
         },
-        'A3': {
+        'E3': {
             'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
@@ -158,7 +158,7 @@ def main():
             ),
             'charge': 2*12,
         },
-        'C1': {
+        'G1': {
             'tg': M12L24(
                 building_blocks={
                     pd: range(0, 12),
