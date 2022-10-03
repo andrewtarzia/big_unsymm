@@ -1,7 +1,7 @@
 # big_unsymm
 Construct and study large (M12L24) cages with unsymmetrical ligands
 
-DOI for publication: AWAITING.
+DOI for publication: 10.1039/d2sc03856k
 
 Installation:
 
